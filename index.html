@@ -13,7 +13,8 @@
 <style>
   :root{ --paper:#f4eedf; --ink:#211c13; --body:#5a5345; --teal:#15604a; --teal-lt:#6fb89d; --terra:#bd5436; --line:#e0d6c2; --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;font-family:var(--sans);color:var(--ink);background:#0c0f12;overflow:hidden}
+  html,body{height:100%;font-family:var(--sans);color:var(--ink);background:#0c0f12;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  textarea,input{-webkit-user-select:text;user-select:text}
   #cesiumContainer{position:absolute;inset:0;touch-action:none}
   .cesium-widget-credits{font-size:10px!important}.cesium-viewer-bottom{z-index:1}
   #gate{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#12100c;padding:24px}
@@ -83,12 +84,9 @@
   .poi-fly{font-size:11px;font-weight:600;color:var(--terra);text-transform:uppercase;letter-spacing:.04em;margin-top:5px;display:inline-block}
   .homes-btn{display:inline-block;background:var(--teal);color:#fff;text-decoration:none;padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;margin-top:4px}
   .loading{font-size:13px;color:#a39c8b;padding:12px 0}
-  #touchctl{position:absolute;right:18px;bottom:118px;z-index:18;display:none;flex-direction:column;align-items:center;gap:12px}
-  #touchctl.show{display:flex}
-  #touchctl button{border:none;font-family:var(--sans);font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none}
-  #touchctl .small{width:50px;height:50px;border-radius:50%;background:rgba(244,238,223,.94);color:var(--ink);border:1px solid var(--line);font-size:20px}
-  #tcGo{width:82px;height:82px;border-radius:50%;background:rgba(21,96,74,.92);color:#fff;font-size:16px;letter-spacing:.05em}
-  #touchctl button:active{filter:brightness(1.18)}
+  #joy{position:absolute;z-index:18;width:120px;height:120px;border-radius:50%;background:rgba(244,238,223,.22);border:2px solid rgba(244,238,223,.5);display:none;pointer-events:none}
+  #joy.show{display:block}
+  #joyknob{position:absolute;left:32px;top:32px;width:56px;height:56px;border-radius:50%;background:rgba(21,96,74,.9);box-shadow:0 4px 14px rgba(0,0,0,.35)}
   #pano{position:absolute;inset:0;z-index:25;display:none}
   #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
   #biz{position:absolute;left:22px;bottom:26px;z-index:17;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
@@ -147,11 +145,7 @@
   <button id="sheetClose">&#8595;</button>
   <div id="sheetBody"></div>
 </div>
-<div id="touchctl">
-  <button class="small" id="tcUp">&#8593;</button>
-  <button id="tcGo">GO</button>
-  <button class="small" id="tcDown">&#8595;</button>
-</div>
+<div id="joy"><div id="joyknob"></div></div>
 <div id="pano"></div>
 <button id="panoExit">Back to the sky</button>
 <div id="gate">
@@ -207,7 +201,8 @@ let orbiting=false,orbitCenter=null,orbitHeading=0;
 let flightMode=null, lastMode=null;      // 'fly' | 'drive' | null
 let fwdV=0, yawV=0, vertV=0, looking=false, invert=false, pano=null, carEntity=null, veh=null;
 const isTouch = window.matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window);
-let tThrust=false, tRise=false, tDescend=false, lookX=0, lookY=0;
+let lookX=0, lookY=0, movePid=null, lookPid=null, joyCx=0, joyCy=0;
+const moveVec={x:0,y:0}; const JOY_R=52;
 const keys={};
 
 function initViewer(){
@@ -224,22 +219,22 @@ function initViewer(){
     if(!flightMode) return;
     const cam=viewer.camera;
     const boost=(keys['ShiftLeft']||keys['ShiftRight'])?2.4:1;
-    const thr=Math.max(-1,Math.min(1, (((keys['KeyW']||keys['ArrowUp'])?1:0)-((keys['KeyS']||keys['ArrowDown'])?1:0)) + (tThrust?1:0) ));
-    let steer=((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0);
+    const thr=Math.max(-1,Math.min(1, (((keys['KeyW']||keys['ArrowUp'])?1:0)-((keys['KeyS']||keys['ArrowDown'])?1:0)) + (isTouch? -moveVec.y : 0) ));
+    let steer=(((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0)) + (isTouch? -moveVec.x : 0);
     if(invert) steer=-steer;
-    const vin=Math.max(-1,Math.min(1, (((keys['KeyQ'])?1:0)-((keys['KeyE'])?1:0)) + (tRise?1:0) - (tDescend?1:0) ));
-    const maxSpeed=300*boost, accel=240*boost, maxYaw=1.0, maxVert=140*boost;
+    const vin=Math.max(-1,Math.min(1, ((keys['KeyQ'])?1:0)-((keys['KeyE'])?1:0) ));
+    const maxSpeed=(isTouch?360:300)*boost, accel=(isTouch?300:240)*boost, maxYaw=1.0, maxVert=140*boost;
     fwdV+=thr*accel*dt; fwdV*=Math.pow(0.4,dt); fwdV=Math.max(-maxSpeed,Math.min(maxSpeed,fwdV)); if(thr===0&&Math.abs(fwdV)<0.4)fwdV=0;
     yawV+=steer*2.6*dt; yawV*=Math.pow(0.03,dt); yawV=Math.max(-maxYaw,Math.min(maxYaw,yawV));
     vertV+=vin*230*dt; vertV*=Math.pow(0.1,dt); vertV=Math.max(-maxVert,Math.min(maxVert,vertV)); if(vin===0&&Math.abs(vertV)<0.4)vertV=0;
     const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
     if(yawV!==0) cam.look(up,yawV*dt);
-    // travel forward on the level plane, independent of where you look
-    let fwd=Cesium.Cartesian3.clone(cam.direction); const dg=Cesium.Cartesian3.dot(fwd,up);
-    Cesium.Cartesian3.subtract(fwd,Cesium.Cartesian3.multiplyByScalar(up,dg,new Cesium.Cartesian3()),fwd);
+    // on touch, fly where you aim (pitch dives and climbs); on desktop, fly level with Q/E for height
+    let fwd=Cesium.Cartesian3.clone(cam.direction);
+    if(!isTouch){ const dg=Cesium.Cartesian3.dot(fwd,up); Cesium.Cartesian3.subtract(fwd,Cesium.Cartesian3.multiplyByScalar(up,dg,new Cesium.Cartesian3()),fwd); }
     if(Cesium.Cartesian3.magnitude(fwd)>1e-6) Cesium.Cartesian3.normalize(fwd,fwd);
     if(fwdV!==0) cam.move(fwd,fwdV*dt);
-    if(vertV!==0) cam.move(up,vertV*dt);
+    if(!isTouch && vertV!==0) cam.move(up,vertV*dt);
     // floor so you can't drop through the ground
     try{ if(viewer.scene.sampleHeightSupported){ const carto=Cesium.Cartographic.fromCartesian(cam.positionWC); const gh=viewer.scene.sampleHeight(carto); const floor=Cesium.defined(gh)?gh+3:(currentTown?currentTown.elev-5:-50); if(carto.height<floor) cam.move(up,(floor-carto.height)); } }catch(e){}
     // gentle bank into turns
@@ -248,17 +243,42 @@ function initViewer(){
   // click a pin -> fly to it
   const h=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   h.setInputAction(mv=>{ const p=viewer.scene.pick(mv.position); if(p&&p.id&&p.id.biz){ openBiz(p.id.biz); flyToBiz(p.id.biz); } }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-  // free-look drag (mouse and touch)
+  // controls: touch = left joystick to fly/turn + right drag to aim; mouse = drag to look
   const cont=document.getElementById('cesiumContainer');
-  cont.addEventListener('pointerdown',e=>{ if(flightMode){ looking=true; lookX=e.clientX; lookY=e.clientY; } });
-  window.addEventListener('pointerup',()=>looking=false);
-  window.addEventListener('pointercancel',()=>looking=false);
+  const joy=document.getElementById('joy'), knob=document.getElementById('joyknob');
+  function setKnob(dx,dy){ knob.style.left=(32+dx)+'px'; knob.style.top=(32+dy)+'px'; }
+  function applyLook(dx,dy){ const cam=viewer.camera; const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
+    if(dx) cam.look(up,-dx*0.003);
+    if(dy){ const dp=-dy*0.0026; const np=cam.pitch+dp; if(np<toRad(35)&&np>toRad(-88)) cam.lookUp(dp); } }
+  cont.addEventListener('pointerdown',e=>{
+    if(flightMode!=='fly'){ return; }
+    if(isTouch){
+      if(e.clientX < window.innerWidth*0.5 && movePid===null){
+        movePid=e.pointerId; joyCx=e.clientX; joyCy=e.clientY;
+        joy.style.left=(joyCx-60)+'px'; joy.style.top=(joyCy-60)+'px'; joy.classList.add('show'); setKnob(0,0);
+      } else if(lookPid===null){ lookPid=e.pointerId; lookX=e.clientX; lookY=e.clientY; }
+    } else { looking=true; lookX=e.clientX; lookY=e.clientY; }
+  });
+  function endPointer(e){
+    if(e.pointerId===movePid){ movePid=null; moveVec.x=0; moveVec.y=0; joy.classList.remove('show'); }
+    else if(e.pointerId===lookPid){ lookPid=null; }
+    else { looking=false; }
+  }
+  window.addEventListener('pointerup',endPointer);
+  window.addEventListener('pointercancel',endPointer);
   window.addEventListener('pointermove',e=>{
-    if(!looking||!flightMode||!viewer) return;
-    const dx=e.clientX-lookX, dy=e.clientY-lookY; lookX=e.clientX; lookY=e.clientY;
-    const cam=viewer.camera; const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
-    if(dx) cam.look(up,-dx*0.0025);
-    if(dy){ const dp=-dy*0.0022; const np=cam.pitch+dp; if(np<toRad(35)&&np>toRad(-88)) cam.lookUp(dp); }
+    if(flightMode!=='fly'||!viewer) return;
+    if(isTouch){
+      if(e.pointerId===movePid){
+        let dx=e.clientX-joyCx, dy=e.clientY-joyCy; const d=Math.hypot(dx,dy);
+        if(d>JOY_R){ dx=dx/d*JOY_R; dy=dy/d*JOY_R; }
+        setKnob(dx,dy); moveVec.x=dx/JOY_R; moveVec.y=dy/JOY_R;
+      } else if(e.pointerId===lookPid){
+        applyLook(e.clientX-lookX, e.clientY-lookY); lookX=e.clientX; lookY=e.clientY;
+      }
+    } else if(looking){
+      applyLook(e.clientX-lookX, e.clientY-lookY); lookX=e.clientX; lookY=e.clientY;
+    }
   });
 }
 async function loadTiles(key){ try{ const ts=await Cesium.createGooglePhotorealistic3DTileset(key); viewer.scene.primitives.add(ts); tilesetLoaded=true; }catch(e){ console.error(e); setStatus("Could not load the 3D tiles. Check the key and that the Map Tiles API is enabled."); } }
@@ -266,13 +286,10 @@ function setStatus(m){ const s=document.getElementById('status'); if(!m){s.class
 function releaseCam(){ orbiting=false; if(viewer) viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); }
 function setLegend(m){ const L=document.getElementById('legend'); if(!m){L.classList.remove('show');return;}
   L.innerHTML = isTouch
-   ? 'Drag to look &middot; hold <b>GO</b> to fly &middot; <b>&uarr;</b>/<b>&darr;</b> for height &middot; tap a place to visit'
+   ? 'Left thumb to fly and turn &middot; drag the right side to aim &middot; tap a place to visit'
    : '<b>&uarr;</b>/<b>&darr;</b> or <b>W</b>/<b>S</b> fly level &middot; <b>&larr;</b>/<b>&rarr;</b> turn &middot; <b>Q</b>/<b>E</b> up/down &middot; drag to look &middot; <b>Shift</b> boost &middot; <b>Tab</b> places &middot; <b>Enter</b> fly';
   L.classList.add('show'); }
-function updateTouchCtl(){ const on=isTouch&&flightMode==='fly'; document.getElementById('touchctl').classList.toggle('show',on); if(!on){ tThrust=tRise=tDescend=false; } }
-function bindHold(id,fn){ const el=document.getElementById(id); const d=e=>{e.preventDefault();fn(true);}, u=e=>{e.preventDefault();fn(false);};
-  el.addEventListener('pointerdown',d); el.addEventListener('pointerup',u); el.addEventListener('pointerleave',u); el.addEventListener('pointercancel',u); }
-bindHold('tcGo',v=>tThrust=v); bindHold('tcUp',v=>tRise=v); bindHold('tcDown',v=>tDescend=v);
+function updateTouchCtl(){ if(!(isTouch&&flightMode==='fly')){ moveVec.x=0; moveVec.y=0; movePid=null; lookPid=null; const j=document.getElementById('joy'); if(j) j.classList.remove('show'); } }
 
 function enterMode(m){
   if(!viewer||!tilesetLoaded||!currentTown) return;
