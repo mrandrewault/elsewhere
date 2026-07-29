@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<!-- Elsewhere clean build -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elsewhere</title>
+<script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/';</script>
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/Cesium.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#f4eedf; --ink:#211c13; --body:#5a5345; --teal:#15604a; --teal-lt:#6fb89d; --terra:#bd5436; --line:#e0d6c2; --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:var(--sans);color:var(--ink);background:#0c0f12;overflow:hidden}
+  #cesiumContainer{position:absolute;inset:0;touch-action:none}
+  .cesium-widget-credits{font-size:10px!important}.cesium-viewer-bottom{z-index:1}
+  #gate{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#12100c;padding:24px}
+  .gate-card{max-width:460px;background:var(--paper);border-radius:18px;padding:34px 32px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  .gate-card .brand{font-family:var(--serif);font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);font-size:13px}
+  .gate-card h1{font-family:var(--serif);font-weight:500;font-size:27px;margin:8px 0 10px;line-height:1.15}
+  .gate-card p{font-size:14px;color:var(--body);line-height:1.55;margin-bottom:16px}
+  .gate-card input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff;margin-bottom:12px}
+  .gate-card button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--teal);color:#fff;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
+  .gate-card .skip{background:none;color:var(--body);margin-top:8px;font-weight:500;text-decoration:underline;width:auto;padding:4px}
+  .gate-card small{display:block;font-size:12px;color:#a39c8b;margin-top:14px;line-height:1.5}
+  #panel{position:absolute;top:0;left:0;height:100%;width:392px;z-index:20;display:flex;flex-direction:column;background:rgba(244,238,223,.95);backdrop-filter:blur(8px);box-shadow:0 0 60px rgba(0,0,0,.25);transition:transform .5s cubic-bezier(.4,0,.1,1)}
+  #panel.hidden{transform:translateX(-100%)}
+  .head{padding:26px 26px 14px}
+  .brand{font-family:var(--serif);font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);font-size:13px}
+  .tag{font-family:var(--serif);font-size:21px;margin-top:5px;line-height:1.2}
+  .searchbox{padding:0 26px}
+  textarea{width:100%;min-height:78px;resize:none;padding:13px 14px;border:1px solid var(--line);border-radius:12px;font-family:var(--sans);font-size:14.5px;line-height:1.45;background:#fff;color:var(--ink)}
+  textarea:focus{outline:none;border-color:var(--teal-lt)}
+  .go{margin-top:10px;width:100%;padding:12px;border:none;border-radius:11px;background:var(--teal);color:#fff;font-family:var(--sans);font-weight:600;font-size:14.5px;cursor:pointer}
+  .chips{padding:14px 26px 6px;display:flex;flex-direction:column;gap:7px}
+  .chips .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#a39c8b;margin-bottom:2px}
+  .chip{text-align:left;background:rgba(255,255,255,.6);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--body);cursor:pointer;line-height:1.35;font-family:var(--sans)}
+  .chip:hover{border-color:var(--teal-lt);color:var(--ink)}
+  .results{flex:1;overflow-y:auto;padding:6px 26px 26px}
+  .results .rlbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#a39c8b;margin:14px 0 10px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 16px;margin-bottom:11px;cursor:pointer;transition:.15s}
+  .card:hover{border-color:var(--teal-lt);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.07)}
+  .card .nm{font-family:var(--serif);font-size:19px;line-height:1.1}
+  .card .st{font-size:12px;color:#a39c8b;margin-top:1px}
+  .card .why{font-size:13px;color:var(--body);line-height:1.45;margin-top:9px}
+  .card .match{display:inline-block;margin-top:10px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--teal);text-transform:uppercase}
+  .card .go2{float:right;font-size:12px;color:var(--terra);font-weight:600;margin-top:2px}
+  .empty{font-size:13px;color:var(--body);line-height:1.5;padding:18px 2px}
+  #explore{position:absolute;top:22px;left:50%;transform:translateX(-50%);z-index:15;display:none;background:rgba(244,238,223,.96);backdrop-filter:blur(8px);border-radius:14px;padding:15px 20px;max-width:560px;width:calc(100% - 460px);box-shadow:0 14px 40px rgba(0,0,0,.28)}
+  #explore.show{display:block}
+  #explore .en{font-family:var(--serif);font-size:23px;line-height:1.1}
+  #explore .es{font-size:12px;color:#a39c8b;margin-top:1px}
+  #explore .eb{font-size:13.5px;color:var(--body);line-height:1.5;margin-top:8px}
+  #explore .row{margin-top:12px;display:flex;gap:8px;align-items:center}
+  #explore button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 16px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+  #explore button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+  #explore button.back{margin-left:auto}
+  #toggle{position:absolute;top:22px;left:22px;z-index:16;display:none;background:rgba(244,238,223,.95);border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+  #toggle.show{display:block}
+  #legend{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:14;display:none;background:rgba(20,17,12,.8);color:#f0e9da;font-size:12.5px;padding:9px 16px;border-radius:20px}
+  #legend.show{display:block}
+  #legend b{color:var(--teal-lt);font-weight:600}
+  #status{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:14;background:rgba(20,17,12,.82);color:#f0e9da;font-size:13px;padding:9px 16px;border-radius:20px;display:none}
+  #status.show{display:block}
+  #infobar{position:absolute;left:0;right:0;bottom:0;z-index:18;display:none;justify-content:center;flex-wrap:wrap;gap:8px;padding:11px 12px 16px;background:linear-gradient(to top, rgba(18,15,11,.6), rgba(18,15,11,0))}
+  #infobar.show{display:flex}
+  .itab{background:rgba(244,238,223,.93);border:1px solid var(--line);border-radius:20px;padding:9px 16px;font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
+  .itab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+  #sheet{position:absolute;left:0;right:0;bottom:0;z-index:19;height:46vh;max-height:460px;transform:translateY(105%);transition:transform .38s cubic-bezier(.4,0,.1,1);background:rgba(244,238,223,.975);backdrop-filter:blur(10px);border-radius:20px 20px 0 0;box-shadow:0 -14px 44px rgba(0,0,0,.32);display:flex;flex-direction:column}
+  #sheet.show{transform:translateY(0)}
+  #sheetClose{align-self:center;margin:9px;background:rgba(20,17,12,.1);border:none;border-radius:14px;width:46px;height:26px;font-size:15px;cursor:pointer;color:var(--ink)}
+  #sheetBody{flex:1;overflow-y:auto;padding:2px 24px 24px}
+  #sheetBody h3{font-family:var(--serif);font-weight:500;font-size:21px;margin-bottom:9px}
+  #sheetBody p{font-size:14px;color:var(--body);line-height:1.55;margin-bottom:12px}
+  #sheetBody .src{font-size:11.5px;color:#a39c8b}
+  .poi{display:flex;gap:13px;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}
+  .poi:hover .poi-nm{color:var(--teal)}
+  .poi img{width:66px;height:66px;object-fit:cover;border-radius:10px;background:#ddd4c2;flex:none}
+  .poi-nm{font-family:var(--serif);font-size:16px;line-height:1.15}
+  .poi-tx{font-size:12.5px;color:var(--body);line-height:1.4;margin-top:3px}
+  .poi-fly{font-size:11px;font-weight:600;color:var(--terra);text-transform:uppercase;letter-spacing:.04em;margin-top:5px;display:inline-block}
+  .homes-btn{display:inline-block;background:var(--teal);color:#fff;text-decoration:none;padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;margin-top:4px}
+  .loading{font-size:13px;color:#a39c8b;padding:12px 0}
+  #touchctl{position:absolute;right:18px;bottom:118px;z-index:18;display:none;flex-direction:column;align-items:center;gap:12px}
+  #touchctl.show{display:flex}
+  #touchctl button{border:none;font-family:var(--sans);font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none}
+  #touchctl .small{width:50px;height:50px;border-radius:50%;background:rgba(244,238,223,.94);color:var(--ink);border:1px solid var(--line);font-size:20px}
+  #tcGo{width:82px;height:82px;border-radius:50%;background:rgba(21,96,74,.92);color:#fff;font-size:16px;letter-spacing:.05em}
+  #touchctl button:active{filter:brightness(1.18)}
+  #pano{position:absolute;inset:0;z-index:25;display:none}
+  #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+  #biz{position:absolute;left:22px;bottom:26px;z-index:17;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
+  #biz.show{display:block}
+  #biz img{width:100%;height:150px;object-fit:cover;display:block;background:#ddd4c2}
+  #biz .bpad{padding:14px 16px}
+  #biz .bn{font-family:var(--serif);font-size:19px;line-height:1.15}
+  #biz .bc{font-size:12px;color:#a39c8b;margin-top:2px;text-transform:capitalize}
+  #biz .br{font-size:12.5px;color:var(--body);margin-top:6px}
+  #biz .brow{margin-top:11px;display:flex;gap:8px}
+  #biz a,#biz button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+  #biz a.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
+  #biz .bx{position:absolute;top:8px;right:10px;background:rgba(20,17,12,.55);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;padding:0}
+  @media(max-width:720px){ #panel{width:100%} #explore{width:calc(100% - 44px)} #biz{width:calc(100% - 44px)} }
+</style>
+</head>
+<body>
+<div id="cesiumContainer"></div>
+<button id="toggle">Search</button>
+<div id="explore">
+  <div class="en" id="eName">Town</div>
+  <div class="es" id="eState">State</div>
+  <div class="eb" id="eBlurb"></div>
+  <div class="row">
+    <button id="eFly">Fly</button>
+    <button id="eStreet">Street View</button>
+    <button id="eInvert">Invert</button>
+    <button class="back" id="eBack">Back to results</button>
+  </div>
+</div>
+<div id="biz">
+  <button class="bx" id="bClose">&times;</button>
+  <img id="bImg" alt="" style="display:none">
+  <div class="bpad">
+    <div class="bn" id="bName">Place</div>
+    <div class="bc" id="bCat"></div>
+    <div class="br" id="bRate"></div>
+    <div class="brow"><button id="bFly">Fly here</button><a id="bMap" class="prim" target="_blank" rel="noopener">Peek inside</a></div>
+  </div>
+</div>
+<div id="panel">
+  <div class="head"><div class="brand">Elsewhere</div><div class="tag">Find where you belong, by how it feels.</div></div>
+  <div class="searchbox"><textarea id="q" placeholder="Describe your ideal town. Or say &ldquo;like Asheville but in a blue state.&rdquo;"></textarea><button class="go" id="go">Search</button></div>
+  <div class="chips" id="chips"><div class="lbl">Try</div></div>
+  <div class="results" id="results"><div class="empty">Type a vibe above and Elsewhere will surface towns that match, then you can drop straight into any of them.</div></div>
+</div>
+<div id="legend"></div>
+<div id="status"></div>
+<div id="infobar">
+  <button class="itab" data-tab="about">About</button>
+  <button class="itab" data-tab="nearby">Notable nearby</button>
+  <button class="itab" data-tab="amenities">Parks &amp; trails</button>
+  <button class="itab" data-tab="homes">Homes</button>
+</div>
+<div id="sheet">
+  <button id="sheetClose">&#8595;</button>
+  <div id="sheetBody"></div>
+</div>
+<div id="touchctl">
+  <button class="small" id="tcUp">&#8593;</button>
+  <button id="tcGo">GO</button>
+  <button class="small" id="tcDown">&#8595;</button>
+</div>
+<div id="pano"></div>
+<button id="panoExit">Back to the sky</button>
+<div id="gate">
+  <div class="gate-card">
+    <div class="brand">Elsewhere</div>
+    <h1>Drop into towns in photoreal 3D.</h1>
+    <p>Paste a Google Maps API key with the Map Tiles API and Places API enabled to stream the world and show local businesses. The vibe search works without one.</p>
+    <input id="keyInput" type="text" placeholder="Google Maps API key" autocomplete="off">
+    <button id="keyGo">Enter</button>
+    <button class="skip" id="keySkip">Skip for now, search only</button>
+    <small>The key streams Google&rsquo;s 3D tiles and looks up nearby places. Restrict it to your domain. Nothing is stored except in this browser.</small>
+  </div>
+</div>
+<script>
+// ---------- TOWN DATA ----------
+const T=["records","hiking","dogParks","historic","arts","walkable","foodie","college","river","mountains","coast","quaint"];
+const TOWNS=[
+  {name:"Portland",state:"Maine",lean:"left",lon:-70.2553,lat:43.6591,pop:68000,city:105,near:"Boston",seasons:4,elev:12,t:[3,2,2,3,3,3,3,2,2,1,3,2],blurb:"A working waterfront turned food capital. Brick and cobblestone, cold-water light, record shops and oyster bars in equal measure."},
+  {name:"Manchester",state:"Vermont",lean:"left",lon:-73.0718,lat:43.1637,pop:4400,city:70,near:"Albany",seasons:4,elev:210,t:[1,3,2,3,2,2,2,0,2,3,0,3],blurb:"A Green Mountain village of white clapboard and marble sidewalks, framed by trailheads in every direction."},
+  {name:"San Rafael",state:"California",lean:"left",lon:-122.5311,lat:37.9735,pop:58000,city:30,near:"San Francisco",seasons:2,elev:8,t:[2,3,3,2,2,2,2,1,1,2,2,1],blurb:"Marin sunshine twenty minutes from the Golden Gate. Open space and dog trails at the edge of a real city."},
+  {name:"Stillwater",state:"Minnesota",lean:"left",lon:-92.8060,lat:45.0563,pop:19000,city:30,near:"Minneapolis",seasons:4,elev:210,t:[1,2,2,3,2,2,2,0,3,0,0,3],blurb:"A St. Croix river town of limestone storefronts and lift bridges, a half hour from the Twin Cities."},
+  {name:"Asheville",state:"North Carolina",lean:"left",lon:-82.5515,lat:35.5951,pop:94000,city:120,near:"Charlotte",seasons:4,elev:650,t:[3,3,3,3,3,3,3,2,2,3,0,2],blurb:"A Blue Ridge arts town wrapped in mountains, murals, breweries and vinyl. Progressive heart in a red-leaning state."},
+  {name:"Beacon",state:"New York",lean:"left",lon:-73.9696,lat:41.5048,pop:14000,city:75,near:"New York",seasons:4,elev:40,t:[2,3,2,3,3,3,3,0,3,2,0,3],blurb:"A mile-long Main Street of galleries and makers under Mount Beacon, an hour up the Hudson line from the city."},
+  {name:"Hudson",state:"New York",lean:"left",lon:-73.7904,lat:42.2529,pop:5900,city:120,near:"New York",seasons:4,elev:30,t:[2,2,2,3,3,3,3,0,3,2,0,3],blurb:"Warren Street antiques, chef storefronts and Federal rowhouses above the river. A design-world weekend town."},
+  {name:"Burlington",state:"Vermont",lean:"left",lon:-73.2121,lat:44.4759,pop:44000,city:90,near:"Montreal",seasons:4,elev:60,t:[3,3,3,2,3,3,3,3,0,2,3,1],blurb:"A lakefront college city with a pedestrian marketplace, deep music roots and mountains on the horizon."},
+  {name:"Northampton",state:"Massachusetts",lean:"left",lon:-72.6412,lat:42.3251,pop:29000,city:90,near:"Boston",seasons:4,elev:40,t:[3,2,2,3,3,3,3,3,2,1,0,2],blurb:"A Pioneer Valley college town thick with bookshops, venues and cafes. Small, walkable and unmistakably itself."},
+  {name:"Bozeman",state:"Montana",lean:"swing",lon:-111.0430,lat:45.6770,pop:56000,city:200,near:"none",seasons:4,elev:1500,t:[1,3,3,2,2,2,2,3,2,3,0,1],blurb:"A university town at the mouth of the mountains, trailheads and rivers minutes from a brick-front downtown."},
+  {name:"Bend",state:"Oregon",lean:"left",lon:-121.3153,lat:44.0582,pop:100000,city:200,near:"none",seasons:4,elev:1100,t:[2,3,3,1,2,2,3,1,3,3,0,1],blurb:"High-desert Cascades town of trails, rivers and taprooms, sunny and outdoors-obsessed year round."},
+  {name:"Traverse City",state:"Michigan",lean:"swing",lon:-85.6206,lat:44.7631,pop:15000,city:150,near:"none",seasons:4,elev:180,t:[1,2,2,2,2,2,3,0,0,0,3,2],blurb:"A bay-front town of cherry orchards and vineyards, beaches in summer and a genuine walkable core."},
+  {name:"Ithaca",state:"New York",lean:"left",lon:-76.5019,lat:42.4440,pop:32000,city:60,near:"Syracuse",seasons:4,elev:150,t:[2,3,2,2,3,3,3,3,2,1,0,2],blurb:"Gorges, waterfalls and two campuses. A famously progressive small city that punches far above its size."},
+  {name:"Saugerties",state:"New York",lean:"left",lon:-73.9515,lat:42.0776,pop:4000,city:110,near:"New York",seasons:4,elev:20,t:[1,2,2,3,2,2,2,0,3,2,0,3],blurb:"A lighthouse, a tidy village grid and a quiet arts undercurrent where the Esopus meets the Hudson."}
+];
+const idx={}; T.forEach((k,i)=>idx[k]=i);
+// ---------- MATCHING ----------
+const TAGWORDS={records:["record store","record shop","vinyl","records"],hiking:["hiking","hike","trail","trails","outdoors","backpack"],dogParks:["dog park","dog-friendly","dog friendly","dogs"],historic:["historic","architecture","old buildings","victorian","federal","colonial","antique","antiques","brick"],arts:["art","arts","gallery","galleries","creative","music","museum","culture","maker"],walkable:["walkable","walk","pedestrian","main street","downtown"],foodie:["food","foodie","restaurant","restaurants","dining","chef","culinary","farm to table"],college:["college","university","campus","student"],river:["river","riverfront","creek","waterfront"],mountains:["mountain","mountains","peaks","alpine"],coast:["coast","coastal","ocean","beach","sea","bay","lake","lakefront","waterfront"],quaint:["quaint","charming","cute","charm","picturesque","cozy","village"]};
+function parsePopCap(q){let cap=null;let m=q.match(/(\d{1,3})\s*k\b/);if(m)cap=parseInt(m[1])*1000;m=q.match(/(?:population|pop|under|less than|below|smaller than|no more than|fewer than|up to)[^\d]{0,14}(\d{1,3}(?:,\d{3})|\d{2,6})\s*(k|thousand)?/);if(m){let n=parseInt(m[1].replace(/,/g,''));if(m[2])n*=1000;cap=cap?Math.min(cap,n):n;}return cap;}
+function detect(q){q=" "+q.toLowerCase()+" ";const want={};T.forEach(k=>{want[k]=TAGWORDS[k].some(w=>q.includes(w));});return{q,want,popCap:parsePopCap(q),left:/\bleft\b|left-lean|blue state|blue-state|\bblue\b|progressive|liberal|democrat/.test(q),blueHard:/blue state|blue-state|in blue states|only blue/.test(q),right:/\bright\b|right-lean|red state|conservative|republican/.test(q),fourSeason:/four season|4 season|real winter|four-season|seasons|snow/.test(q),fourHard:/four season|4 season|four-season/.test(q),near:/within .{0,12}hour|hour (of|from|to)|near .{0,18}(city|nyc|boston|sf|san francisco|chicago|dc)|commut|day trip|close to .{0,10}city|outside .{0,12}(city|nyc)/.test(q),coast:/coast|ocean|beach|\bsea\b|bay|lake/.test(q),mountains:/mountain|alpine|peaks/.test(q)};}
+const LABEL={records:"record stores",hiking:"hiking",dogParks:"dog parks",historic:"historic architecture",arts:"arts scene",walkable:"walkable core",foodie:"food",college:"college town",river:"riverfront",mountains:"mountains",coast:"water",quaint:"quaint charm"};
+function discover(q){const d=detect(q);const out=[];for(const tn of TOWNS){if(d.popCap&&tn.pop>d.popCap)continue;if(d.blueHard&&tn.lean!=="left")continue;if(d.fourHard&&tn.seasons!==4)continue;let score=0;const reasons=[];T.forEach(k=>{if(d.want[k]){const v=tn.t[idx[k]];score+=v*2;if(v>=2)reasons.push(LABEL[k]);}});if(d.left){if(tn.lean==="left"){score+=4;reasons.push("left-leaning");}else if(tn.lean==="swing"){score+=1;}}if(d.right){if(tn.lean==="right"){score+=4;}else if(tn.lean==="swing"){score+=1;}}if(d.fourSeason&&tn.seasons===4){score+=3;if(d.fourHard)reasons.push("four seasons");}if(d.near){if(tn.city<=75){score+=4;reasons.push("near "+tn.near);}else if(tn.city<=110){score+=1;}}if(d.popCap){score+=3;reasons.push("under "+(d.popCap>=1000?(d.popCap/1000)+"k":d.popCap));}if(d.coast&&tn.t[idx.coast]>=2){score+=2;}if(d.mountains&&tn.t[idx.mountains]>=2){score+=2;}if(score>0)out.push({tn,score,reasons:[...new Set(reasons)]});}out.sort((a,b)=>b.score-a.score);return out.slice(0,5);}
+function findAnchor(q){q=q.toLowerCase();for(const tn of TOWNS){if(q.includes(tn.name.toLowerCase()))return tn;}return null;}
+function similar(q){const anchor=findAnchor(q);if(!anchor)return null;const d=detect(q);const av=anchor.t;const norm=v=>Math.sqrt(v.reduce((a,x)=>a+x*x,0))||1;const na=norm(av);const out=[];for(const tn of TOWNS){if(tn===anchor)continue;if(d.blueHard&&tn.lean!=="left")continue;if(d.fourHard&&tn.seasons!==4)continue;if(d.coast&&tn.t[idx.coast]<1)continue;let dot=0;for(let i=0;i<T.length;i++)dot+=av[i]*tn.t[i];let sim=dot/(na*norm(tn.t));const shared=[];for(let i=0;i<T.length;i++){if(av[i]>=2&&tn.t[i]>=2)shared.push(LABEL[T[i]]);}let bonus=0;const mods=[];if(d.blueHard||d.left){if(tn.lean==="left"){bonus+=.06;mods.push("blue state");}}if(d.fourSeason&&tn.seasons===4){bonus+=.03;if(d.fourHard)mods.push("four seasons");}if(d.near&&tn.city<=75){bonus+=.05;mods.push("near "+tn.near);}if(d.coast&&tn.t[idx.coast]>=2){bonus+=.05;mods.push("on the water");}if(d.mountains&&tn.t[idx.mountains]>=2){bonus+=.05;mods.push("in the mountains");}out.push({tn,score:sim+bonus,reasons:[...new Set([...shared.slice(0,3),...mods])]});}out.sort((a,b)=>b.score-a.score);return{anchor,results:out.slice(0,5)};}
+const CHIPS=["Record stores, hiking, dog parks, historic architecture, under 20k, left-leaning, and within an hour of a big city","Like Asheville but in a blue state with four seasons","Coastal, walkable, great food, four real seasons","A small mountain college town with a strong arts scene"];
+const chipWrap=document.getElementById('chips');
+CHIPS.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=()=>{document.getElementById('q').value=c;runSearch();};chipWrap.appendChild(b);});
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function runSearch(){const q=document.getElementById('q').value.trim();const box=document.getElementById('results');if(!q){box.innerHTML='<div class="empty">Type a vibe above to begin.</div>';return;}const sim=similar(q);let list,header;if(sim){list=sim.results;header="Towns like "+sim.anchor.name;}else{list=discover(q);header="Best matches";}if(!list.length){box.innerHTML='<div class="empty">No strong matches in this demo set. Try fewer or different criteria.</div>';return;}let html='<div class="rlbl">'+esc(header)+'</div>';list.forEach(r=>{const why=r.reasons.length?r.reasons.slice(0,5).join(" &middot; "):"a close overall match";html+='<div class="card" data-i="'+TOWNS.indexOf(r.tn)+'"><span class="go2">Explore &rarr;</span><div class="nm">'+esc(r.tn.name)+'</div><div class="st">'+esc(r.tn.state)+'</div><div class="why">'+esc(r.tn.blurb)+'</div><div class="match">'+why+'</div></div>';});box.innerHTML=html;box.querySelectorAll('.card').forEach(c=>c.onclick=()=>exploreTown(TOWNS[+c.dataset.i]));}
+document.getElementById('go').onclick=runSearch;
+
+// ---------- CESIUM ----------
+const toRad=Cesium.Math.toRadians;
+let viewer=null,tilesetLoaded=false,placesSvc=null,currentTown=null;
+let orbiting=false,orbitCenter=null,orbitHeading=0;
+let flightMode=null, lastMode=null;      // 'fly' | 'drive' | null
+let fwdV=0, yawV=0, vertV=0, looking=false, invert=false, pano=null, carEntity=null, veh=null;
+const isTouch = window.matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window);
+let tThrust=false, tRise=false, tDescend=false, lookX=0, lookY=0;
+const keys={};
+
+function initViewer(){
+  Cesium.Ion.defaultAccessToken=undefined;
+  viewer=new Cesium.Viewer('cesiumContainer',{baseLayer:false,baseLayerPicker:false,geocoder:false,homeButton:false,sceneModePicker:false,navigationHelpButton:false,animation:false,timeline:false,fullscreenButton:false,infoBox:false,selectionIndicator:false});
+  viewer.scene.globe.show=false;
+  viewer.scene.screenSpaceCameraController.enableCollisionDetection=false;
+  viewer.scene.screenSpaceCameraController.minimumZoomDistance=8;
+  viewer.camera.setView({destination:Cesium.Cartesian3.fromDegrees(-95,39,5200000)});
+  let last=performance.now();
+  viewer.scene.preRender.addEventListener(()=>{
+    const now=performance.now(); let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+    if(orbiting&&orbitCenter){ orbitHeading+=0.16*dt; viewer.camera.lookAt(orbitCenter,new Cesium.HeadingPitchRange(orbitHeading,toRad(-42),1500)); return; }
+    if(!flightMode) return;
+    const cam=viewer.camera;
+    const boost=(keys['ShiftLeft']||keys['ShiftRight'])?2.4:1;
+    const thr=Math.max(-1,Math.min(1, (((keys['KeyW']||keys['ArrowUp'])?1:0)-((keys['KeyS']||keys['ArrowDown'])?1:0)) + (tThrust?1:0) ));
+    let steer=((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0);
+    if(invert) steer=-steer;
+    const vin=Math.max(-1,Math.min(1, (((keys['KeyQ'])?1:0)-((keys['KeyE'])?1:0)) + (tRise?1:0) - (tDescend?1:0) ));
+    const maxSpeed=300*boost, accel=240*boost, maxYaw=1.0, maxVert=140*boost;
+    fwdV+=thr*accel*dt; fwdV*=Math.pow(0.4,dt); fwdV=Math.max(-maxSpeed,Math.min(maxSpeed,fwdV)); if(thr===0&&Math.abs(fwdV)<0.4)fwdV=0;
+    yawV+=steer*2.6*dt; yawV*=Math.pow(0.03,dt); yawV=Math.max(-maxYaw,Math.min(maxYaw,yawV));
+    vertV+=vin*230*dt; vertV*=Math.pow(0.1,dt); vertV=Math.max(-maxVert,Math.min(maxVert,vertV)); if(vin===0&&Math.abs(vertV)<0.4)vertV=0;
+    const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
+    if(yawV!==0) cam.look(up,yawV*dt);
+    // travel forward on the level plane, independent of where you look
+    let fwd=Cesium.Cartesian3.clone(cam.direction); const dg=Cesium.Cartesian3.dot(fwd,up);
+    Cesium.Cartesian3.subtract(fwd,Cesium.Cartesian3.multiplyByScalar(up,dg,new Cesium.Cartesian3()),fwd);
+    if(Cesium.Cartesian3.magnitude(fwd)>1e-6) Cesium.Cartesian3.normalize(fwd,fwd);
+    if(fwdV!==0) cam.move(fwd,fwdV*dt);
+    if(vertV!==0) cam.move(up,vertV*dt);
+    // floor so you can't drop through the ground
+    try{ if(viewer.scene.sampleHeightSupported){ const carto=Cesium.Cartographic.fromCartesian(cam.positionWC); const gh=viewer.scene.sampleHeight(carto); const floor=Cesium.defined(gh)?gh+3:(currentTown?currentTown.elev-5:-50); if(carto.height<floor) cam.move(up,(floor-carto.height)); } }catch(e){}
+    // gentle bank into turns
+    const targetRoll=-yawV*0.3; let curS=cam.roll>Math.PI?cam.roll-2*Math.PI:cam.roll; let rd=(targetRoll-curS)*Math.min(1,dt*5); if(Math.abs(rd)>1e-4) cam.twistRight(rd);
+  });
+  // click a pin -> fly to it
+  const h=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  h.setInputAction(mv=>{ const p=viewer.scene.pick(mv.position); if(p&&p.id&&p.id.biz){ openBiz(p.id.biz); flyToBiz(p.id.biz); } }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  // free-look drag (mouse and touch)
+  const cont=document.getElementById('cesiumContainer');
+  cont.addEventListener('pointerdown',e=>{ if(flightMode){ looking=true; lookX=e.clientX; lookY=e.clientY; } });
+  window.addEventListener('pointerup',()=>looking=false);
+  window.addEventListener('pointercancel',()=>looking=false);
+  window.addEventListener('pointermove',e=>{
+    if(!looking||!flightMode||!viewer) return;
+    const dx=e.clientX-lookX, dy=e.clientY-lookY; lookX=e.clientX; lookY=e.clientY;
+    const cam=viewer.camera; const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
+    if(dx) cam.look(up,-dx*0.0025);
+    if(dy){ const dp=-dy*0.0022; const np=cam.pitch+dp; if(np<toRad(35)&&np>toRad(-88)) cam.lookUp(dp); }
+  });
+}
+async function loadTiles(key){ try{ const ts=await Cesium.createGooglePhotorealistic3DTileset(key); viewer.scene.primitives.add(ts); tilesetLoaded=true; }catch(e){ console.error(e); setStatus("Could not load the 3D tiles. Check the key and that the Map Tiles API is enabled."); } }
+function setStatus(m){ const s=document.getElementById('status'); if(!m){s.classList.remove('show');return;} s.textContent=m; s.classList.add('show'); }
+function releaseCam(){ orbiting=false; if(viewer) viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); }
+function setLegend(m){ const L=document.getElementById('legend'); if(!m){L.classList.remove('show');return;}
+  L.innerHTML = isTouch
+   ? 'Drag to look &middot; hold <b>GO</b> to fly &middot; <b>&uarr;</b>/<b>&darr;</b> for height &middot; tap a place to visit'
+   : '<b>&uarr;</b>/<b>&darr;</b> or <b>W</b>/<b>S</b> fly level &middot; <b>&larr;</b>/<b>&rarr;</b> turn &middot; <b>Q</b>/<b>E</b> up/down &middot; drag to look &middot; <b>Shift</b> boost &middot; <b>Tab</b> places &middot; <b>Enter</b> fly';
+  L.classList.add('show'); }
+function updateTouchCtl(){ const on=isTouch&&flightMode==='fly'; document.getElementById('touchctl').classList.toggle('show',on); if(!on){ tThrust=tRise=tDescend=false; } }
+function bindHold(id,fn){ const el=document.getElementById(id); const d=e=>{e.preventDefault();fn(true);}, u=e=>{e.preventDefault();fn(false);};
+  el.addEventListener('pointerdown',d); el.addEventListener('pointerup',u); el.addEventListener('pointerleave',u); el.addEventListener('pointercancel',u); }
+bindHold('tcGo',v=>tThrust=v); bindHold('tcUp',v=>tRise=v); bindHold('tcDown',v=>tDescend=v);
+
+function enterMode(m){
+  if(!viewer||!tilesetLoaded||!currentTown) return;
+  releaseCam(); flightMode=null; lastMode=m; fwdV=0; yawV=0; vertV=0;
+  viewer.scene.screenSpaceCameraController.enableInputs=false;
+  document.getElementById('eFly').classList.toggle('on',m==='fly');
+  setLegend(m); setStatus("");
+  const tn=currentTown;
+  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+520), orientation:{heading:toRad(20),pitch:toRad(-14),roll:0}, duration:2.4, complete:()=>{ flightMode='fly'; updateTouchCtl(); } });
+}
+function exploreTown(tn){
+  currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl();
+  document.getElementById('eFly').classList.remove('on');
+  if(carEntity) carEntity.show=false;
+  document.getElementById('panel').classList.add('hidden');
+  document.getElementById('toggle').classList.add('show');
+  document.getElementById('explore').classList.add('show');
+  document.getElementById('biz').classList.remove('show');
+  document.getElementById('eName').textContent=tn.name;
+  document.getElementById('eState').textContent=tn.state;
+  document.getElementById('eBlurb').textContent=tn.blurb;
+  setLegend(null); showInfobar(true); closeSheet();
+  if(!viewer||!tilesetLoaded){ setStatus("Add a Google Maps API key to fly into "+tn.name+". The match still stands."); return; }
+  setStatus(""); releaseCam(); clearPins();
+  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+2200), orientation:{heading:toRad(25),pitch:toRad(-45),roll:0}, duration:4.5,
+    complete:()=>{ orbitCenter=Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev); orbitHeading=toRad(25); orbiting=true; loadPlaces(tn); setStatus("Fly or drop into Street View. The tabs below hold about, landmarks, parks and homes."); setTimeout(()=>setStatus(""),5600); } });
+}
+document.getElementById('eFly').onclick=()=>enterMode('fly');
+document.getElementById('eStreet').onclick=()=>openStreetView();
+document.getElementById('eInvert').onclick=(ev)=>{ invert=!invert; ev.target.classList.toggle('on', invert); };
+document.getElementById('eBack').onclick=()=>{
+  flightMode=null; lastMode=null; fwdV=0; yawV=0; releaseCam(); clearPins(); setLegend(null); if(carEntity) carEntity.show=false;
+  viewer.scene.screenSpaceCameraController.enableInputs=true;
+  document.getElementById('eFly').classList.remove('on'); exitPano(); showInfobar(false); updateTouchCtl();
+  document.getElementById('explore').classList.remove('show');
+  document.getElementById('toggle').classList.remove('show');
+  document.getElementById('biz').classList.remove('show');
+  document.getElementById('panel').classList.remove('hidden');
+  if(viewer&&tilesetLoaded){ viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(-95,39,5200000),duration:2.2}); }
+};
+document.getElementById('toggle').onclick=()=>{ document.getElementById('panel').classList.remove('hidden'); document.getElementById('toggle').classList.remove('show'); };
+
+// keyboard
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  keys[e.code]=true;
+  if(flightMode && ['KeyW','KeyS','KeyA','KeyD','KeyQ','KeyE','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if(document.getElementById('explore').classList.contains('show') && !e.repeat){
+    if(e.code==='Tab'){ cyclePin(e.shiftKey?-1:1); e.preventDefault(); }
+    else if(e.code==='Enter'){ if(focusEnt) flyToBiz(focusEnt.biz); e.preventDefault(); }
+  }
+});
+window.addEventListener('keyup',e=>{ keys[e.code]=false; });
+
+// ---------- PINS ----------
+const pinBuilder=()=>new Cesium.PinBuilder();
+let pinEntities=[], placesWarned=false, focusEnt=null;
+function clearPins(){ if(!viewer)return; pinEntities.forEach(e=>viewer.entities.remove(e)); pinEntities=[]; focusEnt=null; }
+function highlightPin(){ pinEntities.forEach(e=>{ const on=e===focusEnt; e.billboard.scale=on?1.5:0.9; e.label.show=on; }); if(focusEnt) openBiz(focusEnt.biz); }
+function cyclePin(dir){ const arr=[...pinEntities].sort((a,b)=>a.biz.lon-b.biz.lon); if(!arr.length)return; let i=focusEnt?arr.indexOf(focusEnt):-1; i=i<0?(dir>0?0:arr.length-1):(i+dir+arr.length)%arr.length; focusEnt=arr[i]; highlightPin(); }
+const CATCOLOR={cafe:'#bd5436',restaurant:'#15604a',store:'#3b6ea5',default:'#7a5b34'};
+function addPin(tn,place,cat){
+  const loc=place.geometry.location, lon=loc.lng(), lat=loc.lat();
+  const pin=pinBuilder().fromColor(Cesium.Color.fromCssColorString(CATCOLOR[cat]||CATCOLOR.default),42);
+  const biz={name:place.name,cat:cat||'place',rating:place.rating,placeId:place.place_id,lon,lat,photo:(place.photos&&place.photos[0])?place.photos[0].getUrl({maxWidth:440,maxHeight:300}):null};
+  const ent=viewer.entities.add({ position:Cesium.Cartesian3.fromDegrees(lon,lat,tn.elev+8),
+    billboard:{image:pin,verticalOrigin:Cesium.VerticalOrigin.BOTTOM,disableDepthTestDistance:Number.POSITIVE_INFINITY,scale:0.9},
+    label:{text:place.name,font:'500 13px Hanken Grotesk, sans-serif',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.fromCssColorString('#1b1813'),outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-46),disableDepthTestDistance:Number.POSITIVE_INFINITY,showBackground:false,scale:0.9,show:false,verticalOrigin:Cesium.VerticalOrigin.BOTTOM} });
+  ent.biz=biz; pinEntities.push(ent);
+}
+function loadPlaces(tn){
+  if(!window.google||!google.maps||!placesSvc) return;
+  const loc=new google.maps.LatLng(tn.lat,tn.lon);
+  const reqs=[{r:{location:loc,radius:1400,type:'cafe'},cat:'cafe'},{r:{location:loc,radius:1600,keyword:'record store'},cat:'store'},{r:{location:loc,radius:1600,type:'restaurant'},cat:'restaurant'}];
+  reqs.forEach(item=>placesSvc.nearbySearch(item.r,(res,status)=>{
+    if(status!==google.maps.places.PlacesServiceStatus.OK||!res){ if((status==='REQUEST_DENIED'||status==='INVALID_REQUEST')&&!placesWarned){placesWarned=true;setStatus("Business pins need the Places API enabled on your key.");setTimeout(()=>setStatus(""),3600);} return; }
+    res.slice(0,4).forEach(p=>{ if(pinEntities.find(e=>e.biz.placeId===p.place_id))return; addPin(tn,p,item.cat); });
+  }));
+}
+function flyToBiz(biz){
+  flightMode=null; lastMode=null; fwdV=0; yawV=0; vertV=0; releaseCam(); updateTouchCtl();
+  document.getElementById('eFly').classList.remove('on');
+  viewer.scene.screenSpaceCameraController.enableInputs=false;
+  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(biz.lon,biz.lat,(currentTown?currentTown.elev:30)+150), orientation:{heading:toRad(20),pitch:toRad(-28),roll:0}, duration:2.6 });
+}
+function openBiz(biz){
+  const el=document.getElementById('biz'); el.classList.add('show');
+  document.getElementById('bName').textContent=biz.name;
+  document.getElementById('bCat').textContent=biz.cat;
+  document.getElementById('bRate').textContent=biz.rating?('Rated '+biz.rating+' on Google'):'';
+  const img=document.getElementById('bImg'); if(biz.photo){img.src=biz.photo;img.style.display='block';}else{img.style.display='none';}
+  document.getElementById('bMap').href=biz.placeId?('https://www.google.com/maps/place/?q=place_id:'+biz.placeId):('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(biz.name));
+  document.getElementById('bFly').onclick=()=>flyToBiz(biz);
+}
+document.getElementById('bClose').onclick=()=>document.getElementById('biz').classList.remove('show');
+
+// ---------- STREET VIEW ----------
+function openStreetView(){
+  if(!window.google||!google.maps){ setStatus("Street View needs the Google key. Reload and enter it."); setTimeout(()=>setStatus(""),3200); return; }
+  let lat=currentTown?currentTown.lat:0, lng=currentTown?currentTown.lon:0;
+  if(viewer){ try{ const c=viewer.camera.positionCartographic; lat=Cesium.Math.toDegrees(c.latitude); lng=Cesium.Math.toDegrees(c.longitude); }catch(e){} }
+  setStatus("Finding street view…");
+  new google.maps.StreetViewService().getPanorama({location:{lat,lng},radius:200,source:google.maps.StreetViewSource.OUTDOOR},(data,status)=>{
+    if(status==='OK'&&data){ setStatus(""); showPano(data.location.latLng); }
+    else { setStatus("No street view right here. Fly over the streets and try again."); setTimeout(()=>setStatus(""),3600); }
+  });
+}
+function showPano(latLng){
+  flightMode=null; fwdV=0; yawV=0; updateTouchCtl();
+  document.getElementById('eFly').classList.remove('on');
+  document.getElementById('pano').style.display='block';
+  document.getElementById('panoExit').style.display='block';
+  if(!pano){ pano=new google.maps.StreetViewPanorama(document.getElementById('pano'),{position:latLng,pov:{heading:70,pitch:0},zoom:1,addressControl:false,fullscreenControl:false,motionTrackingControl:false,imageDateControl:false}); }
+  else { pano.setPosition(latLng); pano.setVisible(true); }
+}
+function exitPano(){ const p=document.getElementById('pano'), x=document.getElementById('panoExit'); if(p)p.style.display='none'; if(x)x.style.display='none'; }
+document.getElementById('panoExit').onclick=exitPano;
+
+// ---------- INFO BAR + BOTTOM SHEET ----------
+const infoCache={}; let activeTab=null;
+const BAKED_PARKS={
+"Beacon":[
+ {name:"Mount Beacon Park",lat:41.4890,lon:-73.9540,detail:"hiking · fire tower climb · steep switchbacks · big Hudson views"},
+ {name:"Madam Brett Park",lat:41.4992,lon:-73.9838,detail:"riverfront trails · tidal marsh · Fishkill Creek falls"},
+ {name:"Long Dock Park",lat:41.5030,lon:-73.9962,detail:"Hudson River · kayak pavilion · lawns · Beacon Point"},
+ {name:"Memorial Park",lat:41.5068,lon:-73.9660,detail:"ballfields · waterfront · playground · basketball"},
+ {name:"Dennings Point",lat:41.4960,lon:-73.9860,detail:"peninsula trail · Hudson Highlands State Park · river views"},
+ {name:"University Settlement Camp",lat:41.4920,lon:-73.9490,detail:"woods · pool · historic camp (seasonal)"},
+ {name:"South Avenue Park",lat:41.5030,lon:-73.9720,detail:"tennis courts · basketball · playground"}
+],
+"Hudson":[
+ {name:"Promenade Hill Park",lat:42.2520,lon:-73.7950,detail:"historic river overlook · one of the oldest public parks in the country"},
+ {name:"Henry Hudson Riverfront Park",lat:42.2490,lon:-73.8030,detail:"waterfront · boat launch · picnic lawns"},
+ {name:"Oakdale Lake & Park",lat:42.2380,lon:-73.7800,detail:"swimming lake · sand beach · trails (seasonal)"},
+ {name:"Charles Williams Park",lat:42.2460,lon:-73.7890,detail:"ballfields · playground"},
+ {name:"7th Street Park",lat:42.2512,lon:-73.7890,detail:"town square · fountain · shade trees"}
+],
+"Portland":[
+ {name:"Deering Oaks Park",lat:43.6600,lon:-70.2680,detail:"pond · playground · tennis · farmers market"},
+ {name:"Eastern Promenade",lat:43.6680,lon:-70.2430,detail:"harbor views · shore trail · East End Beach"},
+ {name:"Western Promenade",lat:43.6510,lon:-70.2760,detail:"clifftop walk · sunset views · historic district"},
+ {name:"Baxter Woods",lat:43.6730,lon:-70.2780,detail:"off-leash dog trails · shaded woods"},
+ {name:"Back Cove Trail",lat:43.6730,lon:-70.2630,detail:"3.5 mile loop · running · water views"},
+ {name:"Payson Park",lat:43.6730,lon:-70.2670,detail:"ballfields · sledding hill"}
+],
+"Asheville":[
+ {name:"French Broad River Park",lat:35.5670,lon:-82.5730,detail:"riverside trails · dog park · greenway"},
+ {name:"Carrier Park",lat:35.5640,lon:-82.5790,detail:"velodrome · river greenway · fields"},
+ {name:"Beaver Lake",lat:35.6410,lon:-82.5600,detail:"lake loop · bird sanctuary boardwalk"},
+ {name:"NC Arboretum",lat:35.4960,lon:-82.6070,detail:"gardens · forest trails · bonsai"},
+ {name:"Botanical Gardens",lat:35.6160,lon:-82.5670,detail:"native plants · creek trails · free"}
+],
+"Burlington":[
+ {name:"Waterfront Park",lat:44.4800,lon:-73.2230,detail:"Lake Champlain · bike path · beach · sunsets"},
+ {name:"Oakledge Park",lat:44.4570,lon:-73.2260,detail:"lakeside · beach · trails · accessible treehouse"},
+ {name:"Battery Park",lat:44.4820,lon:-73.2210,detail:"lake views · summer concerts"},
+ {name:"Ethan Allen Park",lat:44.5050,lon:-73.2340,detail:"stone tower · woodland trails"},
+ {name:"Island Line Trail",lat:44.4850,lon:-73.2250,detail:"lakefront bike path · causeway"}
+],
+"Northampton":[
+ {name:"Look Park",lat:42.3350,lon:-72.6800,detail:"pond · trails · mini-train · tennis · small zoo"},
+ {name:"Childs Park",lat:42.3240,lon:-72.6500,detail:"gardens · ponds · quiet walks"},
+ {name:"Fitzgerald Lake Conservation",lat:42.3600,lon:-72.6300,detail:"trails · boardwalk · birding"},
+ {name:"Manhan Rail Trail",lat:42.3200,lon:-72.6320,detail:"paved bike and walk trail through town"}
+],
+"Saugerties":[
+ {name:"Saugerties Lighthouse Trail",lat:42.0780,lon:-73.9280,detail:"marsh trail to the 1869 lighthouse · river"},
+ {name:"Cantine Veterans Memorial Complex",lat:42.0870,lon:-73.9490,detail:"ballfields · track · pool"},
+ {name:"Esopus Bend Nature Preserve",lat:42.0700,lon:-73.9600,detail:"creek trails · woods · wildlife"}
+],
+"Ithaca":[
+ {name:"Cascadilla Gorge Trail",lat:42.4420,lon:-76.4870,detail:"gorge trail · waterfalls · climbs to Cornell"},
+ {name:"Buttermilk Falls State Park",lat:42.4180,lon:-76.5200,detail:"waterfalls · swimming · rim trails"},
+ {name:"Stewart Park",lat:42.4640,lon:-76.5050,detail:"lakefront · playground · carousel · trails"},
+ {name:"Cass Park",lat:42.4510,lon:-76.5120,detail:"rink · pool · trails · ballfields"}
+]
+};
+function showInfobar(on){ document.getElementById('infobar').classList.toggle('show',on); if(!on) closeSheet(); }
+function closeSheet(){ document.getElementById('sheet').classList.remove('show'); document.querySelectorAll('.itab').forEach(b=>b.classList.remove('on')); activeTab=null; }
+function openTab(tab){ if(activeTab===tab){ closeSheet(); return; } activeTab=tab; document.querySelectorAll('.itab').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab)); document.getElementById('sheet').classList.add('show'); renderTab(tab); }
+document.querySelectorAll('.itab').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+document.getElementById('sheetClose').onclick=closeSheet;
+function bindPoi(){ document.querySelectorAll('#sheetBody .poi').forEach(el=>{ el.onclick=()=>{ const lon=+el.dataset.lon, lat=+el.dataset.lat; if(lon&&lat) flyToPoint(lon,lat); }; }); }
+function flyToPoint(lon,lat){
+  if(!viewer||!tilesetLoaded) return;
+  flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on'); updateTouchCtl();
+  viewer.scene.screenSpaceCameraController.enableInputs=false;
+  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+260), orientation:{heading:toRad(15),pitch:toRad(-35),roll:0}, duration:2.6 });
+}
+function renderTab(tab){
+  const body=document.getElementById('sheetBody'), tn=currentTown; if(!tn){ body.innerHTML=''; return; }
+  const cache=infoCache[tn.name]=infoCache[tn.name]||{};
+  if(tab==='homes'){
+    const url='https://www.zillow.com/homes/'+encodeURIComponent(tn.name+', '+tn.state)+'/';
+    body.innerHTML='<h3>Homes for sale</h3><p>See what is on the market in '+esc(tn.name)+' right now. This opens a live search in a new tab.</p><a class="homes-btn" target="_blank" rel="noopener" href="'+url+'">Search homes on Zillow &rarr;</a><p class="src" style="margin-top:14px">Proof of concept. A launch version would show listings inline through a licensed MLS feed.</p>';
+    return;
+  }
+  if(tab==='about'){
+    if(cache.about){ body.innerHTML=cache.about; return; }
+    body.innerHTML='<h3>'+esc(tn.name)+'</h3><div class="loading">Reading up on '+esc(tn.name)+'&hellip;</div>';
+    fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(tn.name+', '+tn.state))
+      .then(r=>r.json()).then(d=>{ const html='<h3>'+esc(tn.name)+'</h3>'+(d.thumbnail?'<img style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:12px" src="'+d.thumbnail.source+'">':'')+'<p>'+esc(d.extract||'No summary found.')+'</p><p class="src">Source: Wikipedia</p>'; cache.about=html; if(activeTab==='about') body.innerHTML=html; })
+      .catch(()=>{ if(activeTab==='about') body.innerHTML='<h3>'+esc(tn.name)+'</h3><p>Could not load a summary right now.</p>'; });
+    return;
+  }
+  if(tab==='nearby'){
+    if(cache.nearby){ body.innerHTML=cache.nearby; bindPoi(); return; }
+    body.innerHTML='<h3>Notable nearby</h3><div class="loading">Finding landmarks&hellip;</div>';
+    fetch('https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord='+tn.lat+'%7C'+tn.lon+'&gsradius=6000&gslimit=14&format=json&origin=*')
+      .then(r=>r.json()).then(d=>{
+        const items=(d.query&&d.query.geosearch)||[]; if(!items.length){ if(activeTab==='nearby') body.innerHTML='<h3>Notable nearby</h3><p>Nothing notable indexed here yet.</p>'; return; }
+        const ids=items.map(i=>i.pageid).join('|'); const coords={}; items.forEach(i=>coords[i.pageid]={lat:i.lat,lon:i.lon});
+        return fetch('https://en.wikipedia.org/w/api.php?action=query&prop=extracts%7Cpageimages&exintro&explaintext&exsentences=2&piprop=thumbnail&pithumbsize=130&pageids='+ids+'&format=json&origin=*')
+          .then(r=>r.json()).then(e=>{
+            const pages=e.query.pages; let html='<h3>Notable nearby</h3>';
+            items.forEach(it=>{ const p=pages[it.pageid]; if(!p)return; const c=coords[it.pageid];
+              html+='<div class="poi" data-lon="'+c.lon+'" data-lat="'+c.lat+'">'+(p.thumbnail?'<img src="'+p.thumbnail.source+'">':'')+'<div><div class="poi-nm">'+esc(p.title)+'</div><div class="poi-tx">'+esc((p.extract||'').slice(0,150))+'</div><span class="poi-fly">Fly there &rarr;</span></div></div>'; });
+            cache.nearby=html; if(activeTab==='nearby'){ body.innerHTML=html; bindPoi(); }
+          });
+      }).catch(()=>{ if(activeTab==='nearby') body.innerHTML='<h3>Notable nearby</h3><p>Could not load right now.</p>'; });
+    return;
+  }
+  if(tab==='amenities'){
+    if(cache.amen){ body.innerHTML=cache.amen; bindPoi(); return; }
+    const baked=BAKED_PARKS[tn.name];
+    if(baked){
+      let html='<h3>Parks &amp; trails</h3>';
+      baked.forEach(p=>{ html+='<div class="poi" data-lon="'+p.lon+'" data-lat="'+p.lat+'"><div><div class="poi-nm">'+esc(p.name)+'</div><div class="poi-tx">'+esc(p.detail)+'</div><span class="poi-fly">Fly there &rarr;</span></div></div>'; });
+      html+='<p class="src" style="margin-top:14px">Curated parks and trails. The live build pulls these straight from OpenStreetMap.</p>';
+      cache.amen=html; body.innerHTML=html; bindPoi(); return;
+    }
+    body.innerHTML='<h3>Parks &amp; trails</h3><div class="loading">Checking the map&hellip;</div>';
+    const S=(tn.lat-0.02).toFixed(4),N=(tn.lat+0.02).toFixed(4),W=(tn.lon-0.025).toFixed(4),E=(tn.lon+0.025).toFixed(4);
+    const Q='[out:json][timeout:25];(way["leisure"~"park|dog_park|pitch|playground|garden"]('+S+','+W+','+N+','+E+');node["leisure"~"dog_park|pitch|playground"]('+S+','+W+','+N+','+E+'););out center 40;';
+    fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(Q)).then(r=>r.json()).then(d=>{
+      const els=(d.elements||[]).filter(e=>e.tags&&(e.tags.name||e.tags.leisure)); if(!els.length){ if(activeTab==='amenities') body.innerHTML='<h3>Parks &amp; trails</h3><p>No tagged amenities found nearby.</p>'; return; }
+      let html='<h3>Parks &amp; trails</h3>'; let n=0;
+      els.forEach(e=>{ if(n>=22) return; const c=e.center||{lat:e.lat,lon:e.lon}; if(!c||!c.lat) return; const t=e.tags;
+        const nm=t.name||(t.leisure==='pitch'?((t.sport||'sports')+' court'):String(t.leisure).replace('_',' '));
+        const det=[]; if(t.sport)det.push(t.sport); if(t.access)det.push('access: '+t.access); if(t.fee)det.push(t.fee==='yes'?'permit or fee':'free'); if(t.dog)det.push('dogs '+t.dog); if(t.surface)det.push(t.surface);
+        html+='<div class="poi" data-lon="'+c.lon+'" data-lat="'+c.lat+'"><div><div class="poi-nm">'+esc(nm)+'</div><div class="poi-tx">'+esc(det.join(' &middot; ')||String(t.leisure))+'</div><span class="poi-fly">Fly there &rarr;</span></div></div>'; n++;
+      });
+      cache.amen=html; if(activeTab==='amenities'){ body.innerHTML=html; bindPoi(); }
+    }).catch(()=>{ if(activeTab==='amenities') body.innerHTML='<h3>Parks &amp; trails</h3><p>Map service busy. Try again in a moment.</p>'; });
+    return;
+  }
+}
+
+// ---------- GATE ----------
+function loadGoogleMapsJS(key){ window.__gmapsReady=()=>{ try{ placesSvc=new google.maps.places.PlacesService(document.createElement('div')); }catch(e){console.warn(e);} }; const s=document.createElement('script'); s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&loading=async&callback=__gmapsReady'; s.async=true; document.head.appendChild(s); }
+function start(key){ document.getElementById('gate').style.display='none'; try{ initViewer(); }catch(e){ console.error(e); setStatus("3D view failed to start. The vibe search still works."); } if(key&&viewer){ loadTiles(key); loadGoogleMapsJS(key); } }
+document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('keyInput').value.trim(); if(k){try{localStorage.setItem('elsewhere_gkey',k);}catch(e){}} start(k); };
+document.getElementById('keySkip').onclick=()=>start(null);
+try{ const s=localStorage.getItem('elsewhere_gkey'); if(s) document.getElementById('keyInput').value=s; }catch(e){}
+</script>
+</body>
+</html>
