@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0047)file:///Users/andrewault/Downloads/index_4.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Elsewhere</title>
 <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/';</script>
-<script src="https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/Cesium.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/cesium@1.118/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./index_files/Cesium.js"></script>
+<link href="./index_files/widgets.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com/"><link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./index_files/css2" rel="stylesheet">
 <style>
   :root{ --paper:#f4eedf; --ink:#211c13; --body:#5a5345; --teal:#15604a; --teal-lt:#6fb89d; --terra:#bd5436; --line:#e0d6c2; --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -103,9 +103,25 @@
   #biz .bx{position:absolute;top:8px;right:10px;background:rgba(20,17,12,.55);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;padding:0}
   @media(max-width:720px){ #panel{width:100%} #explore{width:calc(100% - 44px)} #biz{width:calc(100% - 44px)} }
 </style>
-</head>
+<style>.cesium-credit-lightbox-overlay {display: none; z-index: 1; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(80, 80, 80, 0.8);  }
+.cesium-credit-lightbox {background-color: #303336; color: #ffffff; position: relative; min-height: 100px; margin: auto;  }
+.cesium-credit-lightbox > ul > li a, .cesium-credit-lightbox > ul > li a:visited {color: #ffffff;  }
+.cesium-credit-lightbox > ul > li a:hover {color: #48b;  }
+.cesium-credit-lightbox.cesium-credit-lightbox-expanded {border: 1px solid #444; border-radius: 5px; max-width: 370px;  }
+.cesium-credit-lightbox.cesium-credit-lightbox-mobile {height: 100%; width: 100%;  }
+.cesium-credit-lightbox-title {padding: 20px 20px 0 20px;  }
+.cesium-credit-lightbox-close {font-size: 18pt; cursor: pointer; position: absolute; top: 0; right: 6px; color: #ffffff;  }
+.cesium-credit-lightbox-close:hover {color: #48b;  }
+.cesium-credit-lightbox > ul {margin: 0; padding: 12px 20px 12px 40px; font-size: 13px;  }
+.cesium-credit-lightbox > ul > li {padding-bottom: 6px;  }
+.cesium-credit-lightbox > ul > li * {padding: 0; margin: 0;  }
+.cesium-credit-expand-link {padding-left: 5px; cursor: pointer; text-decoration: underline; color: #ffffff;  }
+.cesium-credit-expand-link:hover {color: #48b;  }
+.cesium-credit-text {color: #ffffff;  }
+.cesium-credit-textContainer *, .cesium-credit-logoContainer * {display: inline;  }
+</style><script src="./index_files/js" async=""></script><script src="./index_files/controls.js"></script><script src="./index_files/places.js"></script><script src="./index_files/places_impl.js"></script><script src="./index_files/common.js"></script><script src="./index_files/util.js"></script><script src="./index_files/main.js"></script></head>
 <body>
-<div id="cesiumContainer"></div>
+<div id="cesiumContainer"><div class="cesium-viewer"><div class="cesium-viewer-cesiumWidgetContainer"><div class="cesium-widget"><canvas width="1728" height="962" style="image-rendering: pixelated;"></canvas><div class="cesium-credit-lightbox-overlay"><div class="cesium-credit-lightbox"><div class="cesium-credit-lightbox-title">Data provided by:</div><a class="cesium-credit-lightbox-close">×</a><ul><li><div style="display: inline;">Google</div></li><li><div style="display: inline;">Data SIO, NOAA, U.S. Navy, NGA, GEBCO</div></li><li><div style="display: inline;">Landsat / Copernicus</div></li><li><div style="display: inline;">IBCAO</div></li></ul></div></div></div></div><div class="cesium-viewer-bottom" style="left: 0px; bottom: 0px;"><div class="cesium-widget-credits"><div class="cesium-credit-logoContainer" style="display: inline;"><div style="display: inline;"><a href="https://cesium.com/" target="_blank"><img title="Cesium ion" src="./index_files/ion-credit.png"></a></div></div><div class="cesium-credit-textContainer" style="display: inline;"><div style="display: inline;"><img alt="Google" src="./index_files/google-credit.png"></div></div><a class="cesium-credit-expand-link" style="display: inline;">Data attribution</a></div></div><div class="cesium-viewer-toolbar"></div></div></div>
 <button id="toggle">Search</button>
 <div id="explore">
   <div class="en" id="eName">Town</div>
@@ -119,7 +135,7 @@
   </div>
 </div>
 <div id="biz">
-  <button class="bx" id="bClose">&times;</button>
+  <button class="bx" id="bClose">×</button>
   <img id="bImg" alt="" style="display:none">
   <div class="bpad">
     <div class="bn" id="bName">Place</div>
@@ -130,8 +146,8 @@
 </div>
 <div id="panel">
   <div class="head"><div class="brand">Elsewhere</div><div class="tag">Find where you belong, by how it feels.</div></div>
-  <div class="searchbox"><textarea id="q" placeholder="Describe your ideal town. Or say &ldquo;like Asheville but in a blue state.&rdquo;"></textarea><button class="go" id="go">Search</button></div>
-  <div class="chips" id="chips"><div class="lbl">Try</div></div>
+  <div class="searchbox"><textarea id="q" placeholder="Describe your ideal town. Or say “like Asheville but in a blue state.”"></textarea><button class="go" id="go">Search</button></div>
+  <div class="chips" id="chips"><div class="lbl">Try</div><button class="chip">Record stores, hiking, dog parks, historic architecture, under 20k, left-leaning, and within an hour of a big city</button><button class="chip">Like Asheville but in a blue state with four seasons</button><button class="chip">Coastal, walkable, great food, four real seasons</button><button class="chip">A small mountain college town with a strong arts scene</button></div>
   <div class="results" id="results"><div class="empty">Type a vibe above and Elsewhere will surface towns that match, then you can drop straight into any of them.</div></div>
 </div>
 <div id="legend"></div>
@@ -143,17 +159,17 @@
   <button class="itab" data-tab="homes">Homes</button>
 </div>
 <div id="sheet">
-  <button id="sheetClose">&#8595;</button>
+  <button id="sheetClose">↓</button>
   <div id="sheetBody"></div>
 </div>
 <div id="touchctl">
-  <button class="small" id="tcUp">&#8593;</button>
+  <button class="small" id="tcUp">↑</button>
   <button id="tcGo">GO</button>
-  <button class="small" id="tcDown">&#8595;</button>
+  <button class="small" id="tcDown">↓</button>
 </div>
 <div id="pano"></div>
 <button id="panoExit">Back to the sky</button>
-<div id="gate">
+<div id="gate" style="display: none;">
   <div class="gate-card">
     <div class="brand">Elsewhere</div>
     <h1>Drop into towns in photoreal 3D.</h1>
@@ -161,7 +177,7 @@
     <input id="keyInput" type="text" placeholder="Google Maps API key" autocomplete="off">
     <button id="keyGo">Enter</button>
     <button class="skip" id="keySkip">Skip for now, search only</button>
-    <small>The key streams Google&rsquo;s 3D tiles and looks up nearby places. Restrict it to your domain. Nothing is stored except in this browser.</small>
+    <small>The key streams Google’s 3D tiles and looks up nearby places. Restrict it to your domain. Nothing is stored except in this browser.</small>
   </div>
 </div>
 <script>
@@ -392,6 +408,63 @@ document.getElementById('panoExit').onclick=exitPano;
 
 // ---------- INFO BAR + BOTTOM SHEET ----------
 const infoCache={}; let activeTab=null;
+const BAKED_PARKS={
+"Beacon":[
+ {name:"Mount Beacon Park",lat:41.4890,lon:-73.9540,detail:"hiking · fire tower climb · steep switchbacks · big Hudson views"},
+ {name:"Madam Brett Park",lat:41.4992,lon:-73.9838,detail:"riverfront trails · tidal marsh · Fishkill Creek falls"},
+ {name:"Long Dock Park",lat:41.5030,lon:-73.9962,detail:"Hudson River · kayak pavilion · lawns · Beacon Point"},
+ {name:"Memorial Park",lat:41.5068,lon:-73.9660,detail:"ballfields · waterfront · playground · basketball"},
+ {name:"Dennings Point",lat:41.4960,lon:-73.9860,detail:"peninsula trail · Hudson Highlands State Park · river views"},
+ {name:"University Settlement Camp",lat:41.4920,lon:-73.9490,detail:"woods · pool · historic camp (seasonal)"},
+ {name:"South Avenue Park",lat:41.5030,lon:-73.9720,detail:"tennis courts · basketball · playground"}
+],
+"Hudson":[
+ {name:"Promenade Hill Park",lat:42.2520,lon:-73.7950,detail:"historic river overlook · one of the oldest public parks in the country"},
+ {name:"Henry Hudson Riverfront Park",lat:42.2490,lon:-73.8030,detail:"waterfront · boat launch · picnic lawns"},
+ {name:"Oakdale Lake & Park",lat:42.2380,lon:-73.7800,detail:"swimming lake · sand beach · trails (seasonal)"},
+ {name:"Charles Williams Park",lat:42.2460,lon:-73.7890,detail:"ballfields · playground"},
+ {name:"7th Street Park",lat:42.2512,lon:-73.7890,detail:"town square · fountain · shade trees"}
+],
+"Portland":[
+ {name:"Deering Oaks Park",lat:43.6600,lon:-70.2680,detail:"pond · playground · tennis · farmers market"},
+ {name:"Eastern Promenade",lat:43.6680,lon:-70.2430,detail:"harbor views · shore trail · East End Beach"},
+ {name:"Western Promenade",lat:43.6510,lon:-70.2760,detail:"clifftop walk · sunset views · historic district"},
+ {name:"Baxter Woods",lat:43.6730,lon:-70.2780,detail:"off-leash dog trails · shaded woods"},
+ {name:"Back Cove Trail",lat:43.6730,lon:-70.2630,detail:"3.5 mile loop · running · water views"},
+ {name:"Payson Park",lat:43.6730,lon:-70.2670,detail:"ballfields · sledding hill"}
+],
+"Asheville":[
+ {name:"French Broad River Park",lat:35.5670,lon:-82.5730,detail:"riverside trails · dog park · greenway"},
+ {name:"Carrier Park",lat:35.5640,lon:-82.5790,detail:"velodrome · river greenway · fields"},
+ {name:"Beaver Lake",lat:35.6410,lon:-82.5600,detail:"lake loop · bird sanctuary boardwalk"},
+ {name:"NC Arboretum",lat:35.4960,lon:-82.6070,detail:"gardens · forest trails · bonsai"},
+ {name:"Botanical Gardens",lat:35.6160,lon:-82.5670,detail:"native plants · creek trails · free"}
+],
+"Burlington":[
+ {name:"Waterfront Park",lat:44.4800,lon:-73.2230,detail:"Lake Champlain · bike path · beach · sunsets"},
+ {name:"Oakledge Park",lat:44.4570,lon:-73.2260,detail:"lakeside · beach · trails · accessible treehouse"},
+ {name:"Battery Park",lat:44.4820,lon:-73.2210,detail:"lake views · summer concerts"},
+ {name:"Ethan Allen Park",lat:44.5050,lon:-73.2340,detail:"stone tower · woodland trails"},
+ {name:"Island Line Trail",lat:44.4850,lon:-73.2250,detail:"lakefront bike path · causeway"}
+],
+"Northampton":[
+ {name:"Look Park",lat:42.3350,lon:-72.6800,detail:"pond · trails · mini-train · tennis · small zoo"},
+ {name:"Childs Park",lat:42.3240,lon:-72.6500,detail:"gardens · ponds · quiet walks"},
+ {name:"Fitzgerald Lake Conservation",lat:42.3600,lon:-72.6300,detail:"trails · boardwalk · birding"},
+ {name:"Manhan Rail Trail",lat:42.3200,lon:-72.6320,detail:"paved bike and walk trail through town"}
+],
+"Saugerties":[
+ {name:"Saugerties Lighthouse Trail",lat:42.0780,lon:-73.9280,detail:"marsh trail to the 1869 lighthouse · river"},
+ {name:"Cantine Veterans Memorial Complex",lat:42.0870,lon:-73.9490,detail:"ballfields · track · pool"},
+ {name:"Esopus Bend Nature Preserve",lat:42.0700,lon:-73.9600,detail:"creek trails · woods · wildlife"}
+],
+"Ithaca":[
+ {name:"Cascadilla Gorge Trail",lat:42.4420,lon:-76.4870,detail:"gorge trail · waterfalls · climbs to Cornell"},
+ {name:"Buttermilk Falls State Park",lat:42.4180,lon:-76.5200,detail:"waterfalls · swimming · rim trails"},
+ {name:"Stewart Park",lat:42.4640,lon:-76.5050,detail:"lakefront · playground · carousel · trails"},
+ {name:"Cass Park",lat:42.4510,lon:-76.5120,detail:"rink · pool · trails · ballfields"}
+]
+};
 function showInfobar(on){ document.getElementById('infobar').classList.toggle('show',on); if(!on) closeSheet(); }
 function closeSheet(){ document.getElementById('sheet').classList.remove('show'); document.querySelectorAll('.itab').forEach(b=>b.classList.remove('on')); activeTab=null; }
 function openTab(tab){ if(activeTab===tab){ closeSheet(); return; } activeTab=tab; document.querySelectorAll('.itab').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab)); document.getElementById('sheet').classList.add('show'); renderTab(tab); }
@@ -439,6 +512,13 @@ function renderTab(tab){
   }
   if(tab==='amenities'){
     if(cache.amen){ body.innerHTML=cache.amen; bindPoi(); return; }
+    const baked=BAKED_PARKS[tn.name];
+    if(baked){
+      let html='<h3>Parks &amp; trails</h3>';
+      baked.forEach(p=>{ html+='<div class="poi" data-lon="'+p.lon+'" data-lat="'+p.lat+'"><div><div class="poi-nm">'+esc(p.name)+'</div><div class="poi-tx">'+esc(p.detail)+'</div><span class="poi-fly">Fly there &rarr;</span></div></div>'; });
+      html+='<p class="src" style="margin-top:14px">Curated parks and trails. The live build pulls these straight from OpenStreetMap.</p>';
+      cache.amen=html; body.innerHTML=html; bindPoi(); return;
+    }
     body.innerHTML='<h3>Parks &amp; trails</h3><div class="loading">Checking the map&hellip;</div>';
     const S=(tn.lat-0.02).toFixed(4),N=(tn.lat+0.02).toFixed(4),W=(tn.lon-0.025).toFixed(4),E=(tn.lon+0.025).toFixed(4);
     const Q='[out:json][timeout:25];(way["leisure"~"park|dog_park|pitch|playground|garden"]('+S+','+W+','+N+','+E+');node["leisure"~"dog_park|pitch|playground"]('+S+','+W+','+N+','+E+'););out center 40;';
@@ -463,5 +543,6 @@ document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('
 document.getElementById('keySkip').onclick=()=>start(null);
 try{ const s=localStorage.getItem('elsewhere_gkey'); if(s) document.getElementById('keyInput').value=s; }catch(e){}
 </script>
-</body>
-</html>
+
+
+</body></html>
