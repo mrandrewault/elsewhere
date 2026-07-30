@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere clean build -->
+<!-- Elsewhere build 4 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -92,6 +92,9 @@
   .joy{position:absolute;z-index:18;width:120px;height:120px;border-radius:50%;background:rgba(244,238,223,.2);border:2px solid rgba(244,238,223,.45);display:none;pointer-events:none}
   .joy.show{display:block}
   .joyk{position:absolute;left:32px;top:32px;width:56px;height:56px;border-radius:50%;background:rgba(21,96,74,.9);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  #rotate{position:absolute;inset:0;z-index:35;display:none;flex-direction:column;align-items:center;justify-content:center;background:#12100c;color:#f0e9da;text-align:center;padding:30px;font-family:var(--serif);font-size:22px;line-height:1.4;gap:8px}
+  #rotate.show{display:flex}
+  #rotate span{font-size:14px;font-family:var(--sans);color:#b7ad99}
   #pano{position:absolute;inset:0;z-index:25;display:none}
   #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
   #biz{position:absolute;left:22px;bottom:26px;z-index:17;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
@@ -152,6 +155,7 @@
 </div>
 <div id="joy" class="joy"><div class="joyk"></div></div>
 <div id="joy2" class="joy"><div class="joyk"></div></div>
+<div id="rotate">Rotate your phone sideways<span>Elsewhere flies best in landscape</span></div>
 <div id="pano"></div>
 <button id="panoExit">Back to the sky</button>
 <div id="gate">
@@ -250,6 +254,18 @@ function initViewer(){
     if(vertV!==0) cam.move(up,vertV*dt);
     // floor so you can't drop through the ground
     try{ if(viewer.scene.sampleHeightSupported){ const carto=Cesium.Cartographic.fromCartesian(cam.positionWC); const gh=viewer.scene.sampleHeight(carto); const floor=Cesium.defined(gh)?gh+3:(currentTown?currentTown.elev-5:-50); if(carto.height<floor) cam.move(up,(floor-carto.height)); } }catch(e){}
+    // keep flight inside the town and within a sensible height band
+    if(currentTown){ try{
+      const c=Cesium.Cartographic.fromCartesian(cam.positionWC);
+      const lat0=currentTown.lat, lon0=currentTown.lon;
+      const dLatD=Cesium.Math.toDegrees(c.latitude)-lat0, dLonD=Cesium.Math.toDegrees(c.longitude)-lon0;
+      const mLat=dLatD*110540, mLon=dLonD*111320*Math.cos(lat0*Math.PI/180);
+      const dist=Math.hypot(mLat,mLon), R=2600; let nLat=c.latitude,nLon=c.longitude,nH=c.height,hit=false;
+      if(dist>R){ const k=R/dist; nLat=Cesium.Math.toRadians(lat0+dLatD*k); nLon=Cesium.Math.toRadians(lon0+dLonD*k); hit=true; }
+      const maxAlt=currentTown.elev+2600, minAlt=currentTown.elev-10;
+      if(nH>maxAlt){ nH=maxAlt; hit=true; } if(nH<minAlt){ nH=minAlt; hit=true; }
+      if(hit){ const hd=cam.heading,pt=cam.pitch,rl=cam.roll; cam.setView({ destination:Cesium.Cartesian3.fromRadians(nLon,nLat,nH), orientation:{heading:hd,pitch:pt,roll:rl} }); fwdV*=0.25; latV*=0.25; vertV*=0.25; }
+    }catch(e){} }
     // gentle bank into turns
     const targetRoll=-yawV*0.3; let curS=cam.roll>Math.PI?cam.roll-2*Math.PI:cam.roll; let rd=(targetRoll-curS)*Math.min(1,dt*5); if(Math.abs(rd)>1e-4) cam.twistRight(rd);
   });
@@ -299,6 +315,8 @@ function setLegend(m){ const L=document.getElementById('legend'); if(!m){L.class
 function updateTouchCtl(){ const flying=(flightMode==='fly');
   if(!flying){ moveVec.x=moveVec.y=0; turnVec.x=turnVec.y=0; latV=0; movePid=null; lookPid=null; const a=document.getElementById('joy'),b=document.getElementById('joy2'); if(a)a.classList.remove('show'); if(b)b.classList.remove('show'); }
   const ex=document.getElementById('explore'); if(ex) ex.classList.toggle('min',flying); }
+function checkOrient(){ const exploring=document.getElementById('explore').classList.contains('show'); const portrait=window.innerHeight>window.innerWidth; document.getElementById('rotate').classList.toggle('show', isTouch&&portrait&&exploring); }
+window.addEventListener('resize',checkOrient); window.addEventListener('orientationchange',()=>setTimeout(checkOrient,250));
 
 function enterMode(m){
   if(!viewer||!tilesetLoaded||!currentTown) return;
@@ -320,7 +338,7 @@ function exploreTown(tn){
   document.getElementById('eName').textContent=tn.name;
   document.getElementById('eState').textContent=tn.state;
   document.getElementById('eBlurb').textContent=tn.blurb;
-  setLegend(null); showInfobar(true); closeSheet();
+  setLegend(null); showInfobar(true); closeSheet(); checkOrient();
   if(!viewer||!tilesetLoaded){ setStatus("Add a Google Maps API key to fly into "+tn.name+". The match still stands."); return; }
   setStatus(""); releaseCam(); clearPins();
   viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+2200), orientation:{heading:toRad(25),pitch:toRad(-45),roll:0}, duration:4.5,
@@ -332,7 +350,7 @@ document.getElementById('eInvert').onclick=(ev)=>{ invert=!invert; ev.target.cla
 document.getElementById('eBack').onclick=()=>{
   flightMode=null; lastMode=null; fwdV=0; yawV=0; releaseCam(); clearPins(); setLegend(null); if(carEntity) carEntity.show=false;
   viewer.scene.screenSpaceCameraController.enableInputs=true;
-  document.getElementById('eFly').classList.remove('on'); exitPano(); showInfobar(false); updateTouchCtl();
+  document.getElementById('eFly').classList.remove('on'); exitPano(); showInfobar(false); updateTouchCtl(); checkOrient();
   document.getElementById('explore').classList.remove('show');
   document.getElementById('toggle').classList.remove('show');
   document.getElementById('biz').classList.remove('show');
