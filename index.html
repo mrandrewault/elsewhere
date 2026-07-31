@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 8 -->
+<!-- Elsewhere build 9 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -403,7 +403,8 @@ function flyToBiz(biz){
   flightMode=null; lastMode=null; fwdV=0; yawV=0; vertV=0; releaseCam(); updateTouchCtl();
   document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
-  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(biz.lon,biz.lat,(currentTown?currentTown.elev:30)+150), orientation:{heading:toRad(20),pitch:toRad(-28),roll:0}, duration:2.6 });
+  const target=Cesium.Cartesian3.fromDegrees(biz.lon,biz.lat,(currentTown?currentTown.elev:30)+10);
+  viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,55),{ offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-27),300), duration:2.6 });
 }
 function openBiz(biz){
   const el=document.getElementById('biz'); el.classList.add('show');
