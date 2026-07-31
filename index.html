@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 9 -->
+<!-- Elsewhere build 10 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -323,12 +323,13 @@ window.addEventListener('resize',checkOrient); window.addEventListener('orientat
 
 function enterMode(m){
   if(!viewer||!tilesetLoaded||!currentTown) return;
-  releaseCam(); flightMode=null; lastMode=m; fwdV=0; yawV=0; vertV=0;
+  releaseCam(); fwdV=0; yawV=0; vertV=0;
   viewer.scene.screenSpaceCameraController.enableInputs=false;
-  document.getElementById('eFly').classList.toggle('on',m==='fly');
-  setLegend(m); setStatus("");
-  const tn=currentTown;
-  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+520), orientation:{heading:toRad(20),pitch:toRad(-14),roll:0}, duration:2.4, complete:()=>{ flightMode='fly'; updateTouchCtl(); } });
+  document.getElementById('eFly').classList.add('on');
+  setLegend('fly'); setStatus("");
+  if(carEntity) carEntity.show=false;
+  flightMode='fly'; lastMode='fly';
+  updateTouchCtl();
 }
 function exploreTown(tn){
   currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl();
@@ -404,7 +405,8 @@ function flyToBiz(biz){
   document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
   const target=Cesium.Cartesian3.fromDegrees(biz.lon,biz.lat,(currentTown?currentTown.elev:30)+10);
-  viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,55),{ offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-27),300), duration:2.6 });
+  viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,55),{ offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-27),300), duration:2.6,
+    complete:()=>{ flightMode='fly'; lastMode='fly'; document.getElementById('eFly').classList.add('on'); setLegend('fly'); updateTouchCtl(); } });
 }
 function openBiz(biz){
   const el=document.getElementById('biz'); el.classList.add('show');
