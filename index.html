@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 4 -->
+<!-- Elsewhere build 5 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -244,6 +244,9 @@ function initViewer(){
     vertV+=vin*(isTouch?260:230)*dt; vertV*=Math.pow(isTouch?0.05:0.1,dt); vertV=Math.max(-maxVert,Math.min(maxVert,vertV)); if(vin===0&&Math.abs(vertV)<0.4)vertV=0;
     const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
     if(yawV!==0) cam.look(up,yawV*dt);
+    // R / F tilt the view up and down (survey the streets without diving)
+    const pitchIn=((keys['KeyR'])?1:0)-((keys['KeyF'])?1:0);
+    if(pitchIn!==0){ const a=1.0*dt; const np=cam.pitch+pitchIn*a; if(np<toRad(30)&&np>toRad(-88)){ if(pitchIn>0) cam.lookUp(a); else cam.lookDown(a); } }
     // level forward, independent of look
     let fwd=Cesium.Cartesian3.clone(cam.direction); const dg=Cesium.Cartesian3.dot(fwd,up);
     Cesium.Cartesian3.subtract(fwd,Cesium.Cartesian3.multiplyByScalar(up,dg,new Cesium.Cartesian3()),fwd);
@@ -310,7 +313,7 @@ function releaseCam(){ orbiting=false; if(viewer) viewer.camera.lookAtTransform(
 function setLegend(m){ const L=document.getElementById('legend'); if(!m){L.classList.remove('show');return;}
   L.innerHTML = isTouch
    ? 'Left thumb moves &middot; right thumb turns and changes height &middot; tap a place to visit'
-   : '<b>&uarr;</b>/<b>&darr;</b> or <b>W</b>/<b>S</b> fly level &middot; <b>&larr;</b>/<b>&rarr;</b> turn &middot; <b>Q</b>/<b>E</b> up/down &middot; drag to look &middot; <b>Shift</b> boost &middot; <b>Tab</b> places &middot; <b>Enter</b> fly';
+   : '<b>&uarr;</b>/<b>&darr;</b> or <b>W</b>/<b>S</b> fly level &middot; <b>&larr;</b>/<b>&rarr;</b> turn &middot; <b>Q</b>/<b>E</b> up/down &middot; <b>R</b>/<b>F</b> tilt view &middot; drag to look &middot; <b>Shift</b> boost &middot; <b>Tab</b> places &middot; <b>Enter</b> fly';
   L.classList.add('show'); }
 function updateTouchCtl(){ const flying=(flightMode==='fly');
   if(!flying){ moveVec.x=moveVec.y=0; turnVec.x=turnVec.y=0; latV=0; movePid=null; lookPid=null; const a=document.getElementById('joy'),b=document.getElementById('joy2'); if(a)a.classList.remove('show'); if(b)b.classList.remove('show'); }
