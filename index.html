@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 24 -->
+<!-- Elsewhere build 27 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -97,7 +97,7 @@
   #rotate span{font-size:14px;font-family:var(--sans);color:#b7ad99}
   #pano{position:absolute;inset:0;z-index:25;display:none}
   #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
-  #biz{position:absolute;left:22px;bottom:26px;z-index:21;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
+  #biz{position:absolute;right:22px;bottom:26px;z-index:21;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
   #bSeen{margin-top:8px}
   .seenbtn{width:100%;background:var(--terra);color:#fff;border:none;border-radius:20px;padding:10px 16px;font-family:var(--sans);font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.2px}
   #creator{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(18,15,11,.74);padding:20px}
@@ -551,29 +551,39 @@ function openBiz(biz){
   document.getElementById('bMap').href=biz.placeId?('https://www.google.com/maps/place/?q=place_id:'+biz.placeId):('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(biz.name));
   document.getElementById('bFly').onclick=()=>flyToBiz(biz);
   const seen=document.getElementById('bSeen'); seen.innerHTML='';
-  const cr=matchCreator(biz.name);
-  if(cr && cr.url){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent='Seen on @'+cr.handle; b.onclick=()=>openCreator(cr,biz.name); seen.appendChild(b); }
+  let cr=matchCreator(biz.name);
+  if(!cr && isFoodish(biz)) cr=(currentTown&&CREATOR_TOWNS[currentTown.name])?CREATOR_TOWNS[currentTown.name]:GLOBAL_CREATOR;
+  if(cr && cr.url){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent=cr.btn||('Seen on @'+cr.handle); b.onclick=()=>openCreator(cr,biz.name); seen.appendChild(b); }
 }
 // ---------- CREATOR CONTENT ----------
 // CREATOR_TOWNS: a creator who covers a whole town. Every food spot there shows a
 // "Seen on @handle" button (opens their account). Add towns as you sign creators up.
 const CREATOR_TOWNS = {
-  "New Canaan": { handle:"ctbites", platform:"instagram" }
+  "New Canaan": { handle:"ctbites", url:"https://www.youtube.com/watch?v=Kk2zhrOr1J4", platform:"youtube" },
+  "Greenwich":  { handle:"ctbites", url:"https://www.youtube.com/watch?v=UNR4U2SH_qo", platform:"youtube" },
+  "Hudson":     { handle:"hudsonvalleyeater", url:"https://www.youtube.com/watch?v=fxsE1F9h8yM", platform:"youtube" },
+  "Beacon":     { handle:"hudsonvalleyeater", url:"https://www.youtube.com/watch?v=aXH6wTuZxwE", platform:"youtube" }
 };
+// Universal fallback: any food spot in any town plays this if it has no town-specific or per-spot video.
+const GLOBAL_CREATOR = { btn:"Watch a local video", url:"https://www.youtube.com/watch?v=aRb6xRGkgFQ", platform:"youtube" };
 function isFoodish(biz){ return /cafe|coffee|restaurant|food|bar|bakery|eatery|bistro|pizz|deli|kitchen|grill|tavern|brasserie|diner/i.test((biz.cat||'')+' '+(biz.name||'')); }
 // CREATOR_POSTS: map ONE restaurant to ONE specific public post (overrides the town default,
 // and embeds the actual video). Key = any lowercase piece of the name as it shows on the Google
 // pin. url = the public Instagram or TikTok post link (e.g. https://www.instagram.com/p/CODE/ ).
 const CREATOR_POSTS = {
-  "elm":  { handle:"ctbites",        url:"https://www.instagram.com/reel/DJja2vtOahr/", platform:"instagram" },
-  "sole": { handle:"solerestaurant", url:"https://www.instagram.com/reel/DJZfYWyuTe3/", platform:"instagram" }
+  "gates": { handle:"ctbites",        url:"https://www.youtube.com/watch?v=Kk2zhrOr1J4", platform:"youtube" },
+  "elm":   { handle:"ctbites",        url:"https://www.youtube.com/watch?v=F2lpDbLL2P0", platform:"youtube" },
+  "sole":  { handle:"solerestaurant", url:"https://www.instagram.com/reel/DJZfYWyuTe3/", platform:"instagram" }
 };
 function matchCreator(name){ const n=(name||'').toLowerCase(); for(const k in CREATOR_POSTS){ if(n.indexOf(k)>=0) return CREATOR_POSTS[k]; } return null; }
+function ytId(u){ const m=(u||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:''; }
 function openCreator(cr,bizName){
   const ov=document.getElementById('creator'), body=document.getElementById('creatorBody');
-  document.getElementById('creatorHandle').textContent='@'+cr.handle;
+  document.getElementById('creatorHandle').textContent=cr.handle?('@'+cr.handle):(cr.btn||'Local video');
   if(cr.url){
-    if(cr.platform==='tiktok'){
+    if(cr.platform==='youtube'){
+      body.innerHTML='<div style="position:relative;width:100%;max-width:480px;margin:0 auto;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden"><iframe src="https://www.youtube.com/embed/'+ytId(cr.url)+'?autoplay=1&mute=1&rel=0&playsinline=1" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+    } else if(cr.platform==='tiktok'){
       body.innerHTML='<blockquote class="tiktok-embed" cite="'+cr.url+'" style="max-width:540px;min-width:325px;margin:0 auto"><section></section></blockquote>';
       const s=document.createElement('script'); s.async=true; s.src='https://www.tiktok.com/embed.js'; document.body.appendChild(s);
     } else {
@@ -582,7 +592,7 @@ function openCreator(cr,bizName){
       else { const s=document.createElement('script'); s.async=true; s.src='https://www.instagram.com/embed.js'; document.body.appendChild(s); }
     }
   } else {
-    body.innerHTML='<p style="padding:22px;text-align:center;font-family:var(--sans);color:var(--ink);line-height:1.5">See '+esc(bizName)+' and more on <a href="https://www.instagram.com/'+cr.handle+'/" target="_blank" rel="noopener">@'+cr.handle+' on Instagram</a>.<br><span style="font-size:12px;color:var(--body)">Paste this post&rsquo;s link into CREATOR_POSTS to embed the actual video here.</span></p>';
+    body.innerHTML='<p style="padding:22px;text-align:center;font-family:var(--sans);color:var(--ink);line-height:1.5">See '+esc(bizName)+' and more on <a href="https://www.instagram.com/'+cr.handle+'/" target="_blank" rel="noopener">@'+cr.handle+' on Instagram</a>.</p>';
   }
   ov.classList.add('show');
 }
@@ -623,7 +633,8 @@ const SUGGEST_EMAIL = "you@example.com";
 const STAY = { bookingAid: "", vrboTemplate: "" };
 // Paste your Google Maps API key between the quotes to skip the key screen for good.
 // Restrict the key to your website in the Google console first (see chat).
-const GOOGLE_KEY = "AIzaSyB26vrShNfZW0yt1vatmA4rInN_9gzK9kY";
+// The Google key now comes from a private Vercel setting (see chat), not from this file.
+const GOOGLE_KEY = "";
 const BAKED_PARKS={
 "New Canaan":[
  {name:"Waveny Park",lat:41.1558,lon:-73.5049,detail:"300 acres · walking trails · fields · the Waveny mansion"},
@@ -781,9 +792,15 @@ function flyToPlace(p){
   document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
   openPlaceCard(p);
-  const target=Cesium.Cartesian3.fromDegrees(p.lon,p.lat,(currentTown?currentTown.elev:30)+10);
-  viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,220),{ offset:new Cesium.HeadingPitchRange(toRad(15),toRad(-33),1100), duration:2.8,
-    complete:()=>{ flightMode='fly'; lastMode='fly'; document.getElementById('eFly').classList.add('on'); setLegend('fly'); updateTouchCtl(); } });
+  const frame=(lon,lat)=>{ const target=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+10);
+    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,220),{ offset:new Cesium.HeadingPitchRange(toRad(15),toRad(-33),1100), duration:2.8,
+      complete:()=>{ flightMode='fly'; lastMode='fly'; document.getElementById('eFly').classList.add('on'); setLegend('fly'); updateTouchCtl(); } }); };
+  if(p.cat==='Park or trail' && placesSvc && window.google && google.maps){
+    try{ placesSvc.findPlaceFromQuery({query:p.name+', '+(currentTown?currentTown.name+', '+currentTown.state:''),fields:['geometry']},(res,st)=>{
+      if(st===google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].geometry && res[0].geometry.location){ frame(res[0].geometry.location.lng(),res[0].geometry.location.lat()); }
+      else frame(p.lon,p.lat);
+    }); }catch(e){ frame(p.lon,p.lat); }
+  } else frame(p.lon,p.lat);
 }
 function openPlaceCard(p){
   const el=document.getElementById('biz'); el.classList.add('show');
@@ -878,7 +895,8 @@ function loadGoogleMapsJS(key){ window.__gmapsReady=()=>{ try{ placesSvc=new goo
 function start(key){ document.getElementById('gate').style.display='none'; try{ initViewer(); }catch(e){ console.error(e); setStatus("3D view failed to start. The vibe search still works."); } if(key&&viewer){ loadTiles(key); loadGoogleMapsJS(key); } }
 document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('keyInput').value.trim(); if(k){try{localStorage.setItem('elsewhere_gkey',k);}catch(e){}} start(k); };
 document.getElementById('keySkip').onclick=()=>start(null);
-(function(){ let k=GOOGLE_KEY; if(!k){ try{ k=localStorage.getItem('elsewhere_gkey')||''; }catch(e){} } if(k){ try{document.getElementById('keyInput').value=k;}catch(e){} start(k); } })();
+(function(){ function go(k){ if(!k){ try{ k=localStorage.getItem('elsewhere_gkey')||''; }catch(e){} } if(k){ try{document.getElementById('keyInput').value=k;}catch(e){} start(k); } }
+  fetch('/api/config').then(r=>r.ok?r.json():null).then(cfg=>{ go((cfg&&cfg.key)?cfg.key:GOOGLE_KEY); }).catch(()=>go(GOOGLE_KEY)); })();
 </script>
 <script type="module">
 // Meaning-search: a small AI model runs in the browser, reads each town's description,
