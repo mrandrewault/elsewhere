@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 18 -->
+<!-- Elsewhere build 19 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -211,6 +211,7 @@ const TOWNS=[
   {name:"Rye",state:"New York",lean:"swing",lon:-73.684,lat:40.981,pop:16500,city:45,near:"New York",seasons:4,elev:10,t:[0,1,2,2,1,2,3,0,0,0,3,2],blurb:"Westchester's polished shoreline city of Long Island Sound beaches, historic Playland, and an upscale walkable downtown."},
   {name:"Port Chester",state:"New York",lean:"left",lon:-73.665,lat:41.001,pop:30000,city:50,near:"New York",seasons:4,elev:10,t:[1,0,1,2,2,3,3,0,0,0,2,1],blurb:"The lively, diverse, and affordable foil to its posh neighbors: the Capitol Theatre, a booming restaurant scene, and real nightlife."},
   {name:"Asbury Park",state:"New Jersey",lean:"left",lon:-74.012,lat:40.220,pop:15500,city:90,near:"New York",seasons:4,elev:5,t:[2,0,1,2,3,3,3,0,0,0,3,1],blurb:"A revived Jersey Shore beach city of boardwalk murals, live music, and year-round nightlife, ninety minutes from Penn Station."},
+  {name:"Bedford",state:"New York",lean:"swing",lon:-73.644,lat:41.204,pop:17000,city:70,near:"New York",seasons:4,elev:130,t:[0,2,2,3,2,1,1,0,1,1,0,3],blurb:"Wooded Westchester horse country of historic hamlets, stone walls, and estate privacy, about an hour up the Harlem line."},
   {name:"Hudson",state:"New York",lean:"left",lon:-73.7904,lat:42.2529,pop:5900,city:120,near:"New York",seasons:4,elev:30,t:[2,2,2,3,3,3,3,0,3,2,0,3],blurb:"Warren Street antiques, chef storefronts and Federal rowhouses above the river. A design-world weekend town."},
   {name:"Burlington",state:"Vermont",lean:"left",lon:-73.2121,lat:44.4759,pop:44000,city:90,near:"Montreal",seasons:4,elev:60,t:[3,3,3,2,3,3,3,3,0,2,3,1],blurb:"A lakefront college city with a pedestrian marketplace, deep music roots and mountains on the horizon."},
   {name:"Northampton",state:"Massachusetts",lean:"left",lon:-72.6412,lat:42.3251,pop:29000,city:90,near:"Boston",seasons:4,elev:40,t:[3,2,2,3,3,3,3,3,2,1,0,2],blurb:"A Pioneer Valley college town thick with bookshops, venues and cafes. Small, walkable and unmistakably itself."},
@@ -220,6 +221,39 @@ const TOWNS=[
   {name:"Ithaca",state:"New York",lean:"left",lon:-76.5019,lat:42.4440,pop:32000,city:60,near:"Syracuse",seasons:4,elev:150,t:[2,3,2,2,3,3,3,3,2,1,0,2],blurb:"Gorges, waterfalls and two campuses. A famously progressive small city that punches far above its size."},
   {name:"Saugerties",state:"New York",lean:"left",lon:-73.9515,lat:42.0776,pop:4000,city:110,near:"New York",seasons:4,elev:20,t:[1,2,2,3,2,2,2,0,3,2,0,3],blurb:"A lighthouse, a tidy village grid and a quiet arts undercurrent where the Esopus meets the Hudson."}
 ];
+// Rich vibe descriptions that the meaning-search reads (the "emotional" profiles, condensed).
+const DESC={
+"Portland":"A working waterfront city turned food capital, brick and cobblestone under cold northern light, record shops and oyster bars, breweries and islands. Reads coastal, foodie, creative, salty, and unpretentious.",
+"Manchester":"A white-clapboard Green Mountain village of marble sidewalks framed by trailheads, outlets, and fly-fishing rivers. Reads quaint, outdoorsy, historic, refined, and mountain-town.",
+"San Rafael":"Sunny Marin County twenty minutes from the Golden Gate, open space and dog trails at the edge of a real town. Reads outdoorsy, laid-back, affluent, Californian, and green.",
+"Stillwater":"A St. Croix river town of limestone storefronts and lift bridges a half hour from the Twin Cities. Reads historic, riverside, quaint, Midwestern, and easygoing.",
+"Asheville":"A Blue Ridge arts town wrapped in mountains, murals, breweries, and vinyl, a progressive heart in a red-leaning state. Reads artsy, outdoorsy, bohemian, foodie, and mountain.",
+"Beacon":"A former Hudson River factory town reborn as an arts colony, a mile of galleries and makers under Mount Beacon, Brooklyn slowed down. Reads creative, bohemian, design-conscious, outdoorsy, and quietly ambitious.",
+"New Canaan":"A design-minded, wooded Gold Coast village of midcentury-modern houses, Grace Farms, and a boutique Main Street, affluent and private. Reads refined, architectural, wooded, family-first, and cultured. An upscale, urbane commuter suburb an hour from Manhattan.",
+"Westport":"A polished, moneyed Gold Coast shoreline town where New England prep meets New York money, beaches, boutiques, and top schools. Reads affluent, coastal, polished, family-first, and quietly artistic. An upscale commuter suburb on Long Island Sound.",
+"Ridgefield":"A wooded inland Fairfield County arts village with a historic Main Street and an outsized culture scene, private and green. Reads artistic, historic, wooded, family-first, and refined. A cultured, affluent commuter town in the hills.",
+"Darien":"A shoreline Gold Coast commuter town built on beaches, boats, and top schools, with one of the fastest express rides to Manhattan. Reads affluent, coastal, family-first, practical, and school-driven. An upscale bedroom suburb.",
+"Noroton Heights":"Darien's walk-to-the-train village of smaller homes, the more attainable, human-scaled way into an expensive town. Reads convenient, evolving, commuter-first, and unpretentious. A walkable station suburb.",
+"Greenwich":"The flagship of the Gold Coast, hedge-fund wealth and old money, Greenwich Avenue shopping, waterfront estates and wooded backcountry. Reads wealthy, prestigious, coastal, urbane, and established. The definitive affluent New York commuter suburb.",
+"Cos Cob":"A down-to-earth, family-scaled Greenwich village on the Mianus River, once a cradle of American Impressionism, more attainable than the Avenue. Reads riverside, historic, family-oriented, and quietly artistic.",
+"Old Greenwich":"A storybook seaside village on Long Island Sound wrapped around Tod's Point, walkable and neighborly, still unmistakably Gold Coast. Reads coastal, charming, family-first, walkable, and village-quaint.",
+"Stamford":"The actual city at the center of the Gold Coast, corporate and diverse, a real downtown, a from-scratch waterfront, apartments, and nightlife. Reads urban, corporate, diverse, energetic, and convenient. A small city with city energy near New York.",
+"Norwalk":"A diverse, more affordable harbor city with the SoNo arts-and-nightlife district and a real mix of neighborhoods and incomes. Reads coastal, diverse, creative, working, and attainable.",
+"Rowayton":"An artsy, nautical seaside village hidden inside Norwalk, boats and the Five Mile River and a tiny village center, bohemian and tight-knit. Reads nautical, artsy, tight-knit, coastal, and offbeat.",
+"Rye":"Westchester's polished shoreline city of Long Island Sound beaches, historic Playland, and an upscale walkable downtown, close-knit and affluent. Reads affluent, coastal, polished, family-first, and close-knit. An upscale New York commuter suburb.",
+"Port Chester":"The lively, diverse, affordable foil to posh Rye next door, the Capitol Theatre, a booming Latin and Italian restaurant scene, and real nightlife. Reads diverse, lively, musical, walkable, and affordable.",
+"Asbury Park":"A revived Jersey Shore beach city of boardwalk murals, live music, and year-round nightlife, creative and openly queer. Reads artsy, musical, diverse, revived, and gritty-glamorous.",
+"Bedford":"Wooded Westchester horse country of historic hamlets, stone walls, and estate privacy, old-money and rural, an hour up the Harlem line. Reads affluent, rural, wooded, historic, private, and equestrian. A wealthy, leafy commuter town.",
+"Hudson":"A former whaling port turned antiques-and-design destination, Warren Street's galleries and restaurants, urbane and openly queer, punching far above its size. Reads sophisticated, creative, historic, sociable, and design-forward.",
+"Saugerties":"A loose, laid-back Hudson Valley arts village, a lighthouse and Opus 40 and open studios, more flannel than gallery-opening. Reads artsy, easygoing, outdoorsy, historic, and bohemian.",
+"Northampton":"A small city with the cultural metabolism of a big one, Smith College and the Five College scene, bookstores, music, and progressive politics. Reads intellectual, progressive, artsy, walkable, and countercultural.",
+"Burlington":"A lakefront college city on Lake Champlain, progressive and youthful, a pedestrian marketplace with mountains in view and a big arts and food scene for its size. Reads collegiate, progressive, outdoorsy, walkable, and lakeside.",
+"Bozeman":"A booming Rocky Mountain college town, gateway to Yellowstone and big skiing, outdoorsy and increasingly affluent. Reads mountain, outdoorsy, collegiate, adventurous, and Western.",
+"Bend":"A high-desert outdoor playground in Oregon, breweries and rivers and mountains, sunny and active. Reads outdoorsy, adventurous, laid-back, beer-loving, and mountain.",
+"Traverse City":"A Lake Michigan town of cherry orchards, wineries, and beaches, a Midwestern resort with a walkable downtown. Reads lakeside, foodie, easygoing, seasonal, and charming.",
+"Ithaca":"A dramatic college town of gorges and waterfalls at the head of Cayuga Lake, home to Cornell, progressive and intellectual. Reads collegiate, outdoorsy, progressive, intellectual, and scenic."
+};
+window.TOWNS=TOWNS; window.DESC=DESC;
 const idx={}; T.forEach((k,i)=>idx[k]=i);
 // ---------- MATCHING ----------
 const TAGWORDS={records:["record store","record shop","vinyl","records"],hiking:["hiking","hike","trail","trails","outdoors","backpack"],dogParks:["dog park","dog-friendly","dog friendly","dogs"],historic:["historic","architecture","old buildings","victorian","federal","colonial","antique","antiques","brick"],arts:["art","arts","gallery","galleries","creative","music","museum","culture","maker"],walkable:["walkable","walk","pedestrian","main street","downtown"],foodie:["food","foodie","restaurant","restaurants","dining","chef","culinary","farm to table"],college:["college","university","campus","student"],river:["river","riverfront","creek","waterfront"],mountains:["mountain","mountains","peaks","alpine"],coast:["coast","coastal","ocean","beach","sea","bay","lake","lakefront","waterfront"],quaint:["quaint","charming","cute","charm","picturesque","cozy","village"]};
@@ -233,7 +267,29 @@ const CHIPS=["Record stores, hiking, dog parks, historic architecture, under 20k
 const chipWrap=document.getElementById('chips');
 CHIPS.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=()=>{document.getElementById('q').value=c;runSearch();};chipWrap.appendChild(b);});
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
-function runSearch(){const q=document.getElementById('q').value.trim();const box=document.getElementById('results');if(!q){box.innerHTML='<div class="empty">Type a vibe above to begin.</div>';return;}const sim=similar(q);let list,header;if(sim){list=sim.results;header="Towns like "+sim.anchor.name;}else{list=discover(q);header="Best matches";}if(!list.length){box.innerHTML='<div class="empty">No strong matches in this demo set. Try fewer or different criteria.</div>';return;}let html='<div class="rlbl">'+esc(header)+'</div>';list.forEach(r=>{const why=r.reasons.length?r.reasons.slice(0,5).join(" &middot; "):"a close overall match";html+='<div class="card" data-i="'+TOWNS.indexOf(r.tn)+'"><span class="go2">Explore &rarr;</span><div class="nm">'+esc(r.tn.name)+'</div><div class="st">'+esc(r.tn.state)+'</div><div class="why">'+esc(r.tn.blurb)+'</div><div class="match">'+why+'</div></div>';});box.innerHTML=html;box.querySelectorAll('.card').forEach(c=>c.onclick=()=>exploreTown(TOWNS[+c.dataset.i]));}
+function renderList(list,header){const box=document.getElementById('results');if(!list||!list.length){box.innerHTML='<div class="empty">No strong matches in this set. Try fewer or different words.</div>';return;}let html='<div class="rlbl">'+esc(header)+'</div>';list.forEach(r=>{const why=r.reasons&&r.reasons.length?r.reasons.slice(0,5).join(" &middot; "):"a close overall match";html+='<div class="card" data-i="'+TOWNS.indexOf(r.tn)+'"><span class="go2">Explore &rarr;</span><div class="nm">'+esc(r.tn.name)+'</div><div class="st">'+esc(r.tn.state)+'</div><div class="why">'+esc(r.tn.blurb)+'</div><div class="match">'+why+'</div></div>';});box.innerHTML=html;box.querySelectorAll('.card').forEach(c=>c.onclick=()=>exploreTown(TOWNS[+c.dataset.i]));}
+async function semanticRank(q){
+  if(!window.__embed||!window.__townVecs) return null;
+  const qv=await window.__embed(q); if(!qv) return null;
+  const d=detect(q); const scored=[];
+  for(let i=0;i<TOWNS.length;i++){ const tn=TOWNS[i], v=window.__townVecs[i]; if(!v) continue;
+    if(d.popCap&&tn.pop>d.popCap) continue; if(d.blueHard&&tn.lean!=='left') continue; if(d.fourHard&&tn.seasons!==4) continue;
+    let s=0; for(let k=0;k<qv.length;k++) s+=qv[k]*v[k];
+    if(d.near&&tn.city<=75) s+=0.03; if(d.left&&tn.lean==='left') s+=0.02;
+    scored.push({tn,score:s}); }
+  scored.sort((a,b)=>b.score-a.score);
+  return scored.slice(0,6).map(r=>{ const reasons=[]; T.forEach(k=>{ if(r.tn.t[idx[k]]>=3) reasons.push(LABEL[k]); }); return {tn:r.tn,reasons:reasons.slice(0,4)}; });
+}
+async function runSearch(){
+  const q=document.getElementById('q').value.trim(); const box=document.getElementById('results');
+  if(!q){box.innerHTML='<div class="empty">Type a vibe above to begin.</div>';return;}
+  if(window.__embedPromise&&!window.__embedFailed){
+    if(!window.__embedReady) box.innerHTML='<div class="rlbl">Reading your vibe&hellip;</div><div class="empty">Teaching Elsewhere to understand meaning. First time only, a few seconds.</div>';
+    try{ await window.__embedPromise; const sem=await semanticRank(q); if(sem&&sem.length){ renderList(sem,"Best matches"); return; } }catch(e){}
+  }
+  const sim=similar(q); if(sim){ renderList(sim.results,"Towns like "+sim.anchor.name); return; }
+  renderList(discover(q),"Best matches");
+}
 document.getElementById('go').onclick=runSearch;
 
 // ---------- CESIUM ----------
@@ -730,6 +786,20 @@ function start(key){ document.getElementById('gate').style.display='none'; try{ 
 document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('keyInput').value.trim(); if(k){try{localStorage.setItem('elsewhere_gkey',k);}catch(e){}} start(k); };
 document.getElementById('keySkip').onclick=()=>start(null);
 try{ const s=localStorage.getItem('elsewhere_gkey'); if(s) document.getElementById('keyInput').value=s; }catch(e){}
+</script>
+<script type="module">
+// Meaning-search: a small AI model runs in the browser, reads each town's description,
+// and ranks towns by how close their meaning is to the query. No server, no key.
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+env.allowLocalModels=false;
+async function loadSemantic(){
+  const embedder = await pipeline('feature-extraction','Xenova/all-MiniLM-L6-v2');
+  window.__embed = async (text)=>{ const o=await embedder(text,{pooling:'mean',normalize:true}); return Array.from(o.data); };
+  const T=window.TOWNS||[], D=window.DESC||{}; const vecs=[];
+  for(const tn of T){ const text=tn.name+', '+tn.state+'. '+(D[tn.name]||tn.blurb||''); vecs.push(await window.__embed(text)); }
+  window.__townVecs=vecs; window.__embedReady=true;
+}
+window.__embedPromise = loadSemantic().catch(e=>{ console.error('meaning-search failed to load',e); window.__embedFailed=true; });
 </script>
 </body>
 </html>
