@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 19 -->
+<!-- Elsewhere build 24 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -421,7 +421,7 @@ function enterMode(m){
   updateTouchCtl();
 }
 function exploreTown(tn){
-  currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl(); clearTrails();
+  currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl(); clearTrails(); prefetchTrails(tn);
   document.getElementById('eFly').classList.remove('on');
   if(carEntity) carEntity.show=false;
   document.getElementById('panel').classList.add('hidden');
@@ -449,13 +449,18 @@ function drawTrail(coords){
     depthFailMaterial:new Cesium.ColorMaterialProperty(col.withAlpha(0.4)) } });
   trailEnts.push(e);
 }
-const OVERPASS_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.osm.jp/api/interpreter'];
+const OVERPASS_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
 function overpassFetch(query){
-  const body='data='+encodeURIComponent(query); let i=0;
+  const q='?data='+encodeURIComponent(query); let i=0;
   function next(){ if(i>=OVERPASS_MIRRORS.length) return Promise.reject(new Error('all mirrors busy'));
-    const url=OVERPASS_MIRRORS[i++];
-    return fetch(url,{method:'POST',body:body}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>next()); }
+    return fetch(OVERPASS_MIRRORS[i++]+q).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>next()); }
   return next();
+}
+function prefetchTrails(tn){
+  try{ if(localStorage.getItem('elsewhere_trails_'+tn.name)) return; }catch(e){}
+  const S=(tn.lat-0.035).toFixed(4),N=(tn.lat+0.035).toFixed(4),W=(tn.lon-0.045).toFixed(4),E=(tn.lon+0.045).toFixed(4);
+  const Q='[out:json][timeout:25];(way["highway"~"path|footway|track|bridleway"]('+S+','+W+','+N+','+E+');way["route"="hiking"]('+S+','+W+','+N+','+E+'););out geom;';
+  overpassFetch(Q).then(d=>{ const ways=(d.elements||[]).filter(x=>x.type==='way'&&x.geometry&&x.geometry.length>1).slice(0,500); if(ways.length){ const list=ways.map(w=>w.geometry.map(g=>[g.lon,g.lat])); try{ localStorage.setItem('elsewhere_trails_'+tn.name,JSON.stringify(list)); }catch(e){} } }).catch(()=>{});
 }
 function loadTrails(tn){
   const key='elsewhere_trails_'+tn.name;
@@ -546,9 +551,8 @@ function openBiz(biz){
   document.getElementById('bMap').href=biz.placeId?('https://www.google.com/maps/place/?q=place_id:'+biz.placeId):('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(biz.name));
   document.getElementById('bFly').onclick=()=>flyToBiz(biz);
   const seen=document.getElementById('bSeen'); seen.innerHTML='';
-  let cr=matchCreator(biz.name);
-  if(!cr && currentTown && CREATOR_TOWNS[currentTown.name] && isFoodish(biz)){ cr=Object.assign({url:''},CREATOR_TOWNS[currentTown.name]); }
-  if(cr){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent='Seen on @'+cr.handle; b.onclick=()=>openCreator(cr,biz.name); seen.appendChild(b); }
+  const cr=matchCreator(biz.name);
+  if(cr && cr.url){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent='Seen on @'+cr.handle; b.onclick=()=>openCreator(cr,biz.name); seen.appendChild(b); }
 }
 // ---------- CREATOR CONTENT ----------
 // CREATOR_TOWNS: a creator who covers a whole town. Every food spot there shows a
@@ -561,9 +565,8 @@ function isFoodish(biz){ return /cafe|coffee|restaurant|food|bar|bakery|eatery|b
 // and embeds the actual video). Key = any lowercase piece of the name as it shows on the Google
 // pin. url = the public Instagram or TikTok post link (e.g. https://www.instagram.com/p/CODE/ ).
 const CREATOR_POSTS = {
-  "elm":    { handle:"ctbites",     url:"", platform:"instagram" },
-  "locali": { handle:"food_of_ct",  url:"", platform:"instagram" },
-  "sole":   { handle:"ctfoodlovers",url:"", platform:"instagram" }
+  "elm":  { handle:"ctbites",        url:"https://www.instagram.com/reel/DJja2vtOahr/", platform:"instagram" },
+  "sole": { handle:"solerestaurant", url:"https://www.instagram.com/reel/DJZfYWyuTe3/", platform:"instagram" }
 };
 function matchCreator(name){ const n=(name||'').toLowerCase(); for(const k in CREATOR_POSTS){ if(n.indexOf(k)>=0) return CREATOR_POSTS[k]; } return null; }
 function openCreator(cr,bizName){
@@ -618,7 +621,97 @@ const SUGGEST_EMAIL = "you@example.com";
 // vrboTemplate: the deep-link URL your affiliate network (Impact/Travelpayouts) gives you, with {q} where the
 //               town goes. Empty = a plain Vrbo search link that still works.
 const STAY = { bookingAid: "", vrboTemplate: "" };
+// Paste your Google Maps API key between the quotes to skip the key screen for good.
+// Restrict the key to your website in the Google console first (see chat).
+const GOOGLE_KEY = "AIzaSyB26vrShNfZW0yt1vatmA4rInN_9gzK9kY";
 const BAKED_PARKS={
+"New Canaan":[
+ {name:"Waveny Park",lat:41.1558,lon:-73.5049,detail:"300 acres · walking trails · fields · the Waveny mansion"},
+ {name:"Mead Memorial Park",lat:41.1447,lon:-73.4869,detail:"pond · playground · duck pond · summer concerts"},
+ {name:"Irwin Park",lat:41.1607,lon:-73.4889,detail:"waterfront lawns · walking paths · dog-friendly"},
+ {name:"New Canaan Nature Center",lat:41.1616,lon:-73.4925,detail:"40 acres · trails · meadows · birding · nature trails"},
+ {name:"Kiwanis Park",lat:41.1394,lon:-73.4926,detail:"pond · quiet trails · woodland"},
+ {name:"Bristow Park & Bird Sanctuary",lat:41.1730,lon:-73.4720,detail:"bird sanctuary · woodland trails · streams"}
+],
+"Westport":[
+ {name:"Compo Beach",lat:41.1150,lon:-73.3480,detail:"Long Island Sound beach · boardwalk · skate park · cannons"},
+ {name:"Sherwood Island State Park",lat:41.1090,lon:-73.3320,detail:"CT's first state park · beach · picnic groves · nature trails"},
+ {name:"Winslow Park",lat:41.1350,lon:-73.3600,detail:"off-leash dog park · open meadows · walking loops"},
+ {name:"Longshore Club Park",lat:41.1080,lon:-73.3600,detail:"golf · marina · tennis · Sound-front lawns"}
+],
+"Ridgefield":[
+ {name:"Weir Farm National Historical Park",lat:41.2560,lon:-73.4520,detail:"American Impressionist site · trails · painting grounds"},
+ {name:"Bennett's Pond State Park",lat:41.3150,lon:-73.4700,detail:"hiking · pond · woodland trails · ridge views"},
+ {name:"Seth Low Pierrepont State Park Reserve",lat:41.3120,lon:-73.4900,detail:"lake · hiking · fishing · quiet woods"},
+ {name:"Ballard Park",lat:41.2810,lon:-73.4980,detail:"downtown green · gardens · summer concerts"}
+],
+"Darien":[
+ {name:"Weed Beach",lat:41.0600,lon:-73.4600,detail:"Sound beach · kayaking · tennis · walking paths"},
+ {name:"Pear Tree Point Beach",lat:41.0520,lon:-73.4820,detail:"beach · boat launch · sunset views"},
+ {name:"Cherry Lawn Park",lat:41.0900,lon:-73.4750,detail:"trails · dog-friendly · nature center · fields"},
+ {name:"Selleck's & Dunlap Woods",lat:41.0830,lon:-73.4700,detail:"woodland trails · boardwalks · ponds"}
+],
+"Noroton Heights":[
+ {name:"Weed Beach",lat:41.0600,lon:-73.4600,detail:"Sound beach · kayaking · tennis · walking paths"},
+ {name:"Selleck's & Dunlap Woods",lat:41.0830,lon:-73.4700,detail:"woodland trails · boardwalks · ponds"},
+ {name:"Cherry Lawn Park",lat:41.0900,lon:-73.4750,detail:"trails · dog-friendly · fields"}
+],
+"Greenwich":[
+ {name:"Greenwich Point Park (Tod's Point)",lat:41.0060,lon:-73.5660,detail:"beach · trails · Sound views · biking loop"},
+ {name:"Bruce Park",lat:41.0240,lon:-73.6300,detail:"ponds · playgrounds · walking paths · the Bruce Museum"},
+ {name:"Babcock Preserve",lat:41.0600,lon:-73.6400,detail:"largest town preserve · miles of wooded trails"},
+ {name:"Audubon Greenwich",lat:41.0750,lon:-73.6850,detail:"nature center · 7 miles of trails · birding"}
+],
+"Cos Cob":[
+ {name:"Cos Cob Park",lat:41.0240,lon:-73.5970,detail:"waterfront park · turf fields · harbor views · walking loop"},
+ {name:"Montgomery Pinetum",lat:41.0400,lon:-73.6000,detail:"arboretum · gardens · woodland trails"},
+ {name:"Bruce Park",lat:41.0240,lon:-73.6300,detail:"ponds · playgrounds · walking paths"}
+],
+"Old Greenwich":[
+ {name:"Greenwich Point Park (Tod's Point)",lat:41.0060,lon:-73.5660,detail:"beach · trails · Sound views · biking loop"},
+ {name:"Binney Park",lat:41.0330,lon:-73.5670,detail:"pond · gardens · swans · village green"},
+ {name:"Innis Arden / Greenwich Cove",lat:41.0180,lon:-73.5730,detail:"cove views · quiet walking paths"}
+],
+"Stamford":[
+ {name:"Cove Island Park",lat:41.0400,lon:-73.5050,detail:"beach · biking loop · nature center · Sound views"},
+ {name:"Mill River Park",lat:41.0550,lon:-73.5450,detail:"downtown greenway · carousel · cherry grove · ice rink"},
+ {name:"Cummings Park",lat:41.0300,lon:-73.5200,detail:"beach · boardwalk · marina · picnic areas"},
+ {name:"Bartlett Arboretum",lat:41.1130,lon:-73.5450,detail:"91 acres · gardens · woodland trails"}
+],
+"Norwalk":[
+ {name:"Calf Pasture Beach",lat:41.0880,lon:-73.3980,detail:"Sound beach · boardwalk · kayak launch · playground"},
+ {name:"Cranbury Park",lat:41.1450,lon:-73.4400,detail:"227 acres · trails · gardens · dog-friendly"},
+ {name:"Oyster Shell Park",lat:41.1080,lon:-73.4180,detail:"hilltop harbor views · walking paths · sculpture"},
+ {name:"Veterans Memorial Park",lat:41.0980,lon:-73.4100,detail:"harbor front · marina · fields · fireworks spot"}
+],
+"Rowayton":[
+ {name:"Bayley Beach",lat:41.0580,lon:-73.4430,detail:"village beach · Sound swimming · sunsets"},
+ {name:"Pinkney Park",lat:41.0650,lon:-73.4420,detail:"riverfront green · summer Shakespeare · picnics"},
+ {name:"Farm Creek Preserve",lat:41.0700,lon:-73.4350,detail:"tidal marsh · birding · short trails"}
+],
+"Rye":[
+ {name:"Playland Park",lat:40.9680,lon:-73.6720,detail:"historic amusement park · beach · boardwalk · lake"},
+ {name:"Marshlands Conservancy",lat:40.9500,lon:-73.7100,detail:"salt marsh · meadows · woodland trails · birding"},
+ {name:"Rye Town Park & Oakland Beach",lat:40.9650,lon:-73.6800,detail:"Sound beach · promenade · bathhouse"},
+ {name:"Edith Read Wildlife Sanctuary",lat:40.9720,lon:-73.6650,detail:"nature center · shoreline trails · pond"}
+],
+"Port Chester":[
+ {name:"Lyon Park",lat:41.0050,lon:-73.6650,detail:"waterfront green · fields · playground · gazebo"},
+ {name:"Edgewood Park",lat:41.0120,lon:-73.6780,detail:"neighborhood park · courts · playground"},
+ {name:"Willett Park",lat:41.0000,lon:-73.6700,detail:"ballfields · recreation · open space"}
+],
+"Bedford":[
+ {name:"Mianus River Gorge Preserve",lat:41.1800,lon:-73.6200,detail:"old-growth hemlocks · river gorge · hiking trails"},
+ {name:"Ward Pound Ridge Reservation",lat:41.2450,lon:-73.5900,detail:"Westchester's largest park · 40 miles of trails · camping"},
+ {name:"Bedford Village Green",lat:41.2040,lon:-73.6430,detail:"historic green · courthouse · stone walls"},
+ {name:"Leon Levy Preserve",lat:41.2300,lon:-73.6400,detail:"wooded trails · streams · quiet walking"}
+],
+"Asbury Park":[
+ {name:"Asbury Park Beach & Boardwalk",lat:40.2200,lon:-74.0000,detail:"ocean beach · murals · Convention Hall · Stone Pony"},
+ {name:"Sunset Lake",lat:40.2250,lon:-74.0100,detail:"lake · paddle boats · lakefront paths"},
+ {name:"Wesley Lake",lat:40.2160,lon:-74.0020,detail:"lake dividing Asbury and Ocean Grove · footbridges"},
+ {name:"Deal Lake",lat:40.2350,lon:-74.0100,detail:"largest coastal lake in the county · boating · birding"}
+],
 "Beacon":[
  {name:"Mount Beacon Park",lat:41.4967,lon:-73.9443,detail:"hiking · fire tower climb · steep switchbacks · big Hudson views"},
  {name:"Madam Brett Park",lat:41.4992,lon:-73.9838,detail:"riverfront trails · tidal marsh · Fishkill Creek falls"},
@@ -785,7 +878,7 @@ function loadGoogleMapsJS(key){ window.__gmapsReady=()=>{ try{ placesSvc=new goo
 function start(key){ document.getElementById('gate').style.display='none'; try{ initViewer(); }catch(e){ console.error(e); setStatus("3D view failed to start. The vibe search still works."); } if(key&&viewer){ loadTiles(key); loadGoogleMapsJS(key); } }
 document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('keyInput').value.trim(); if(k){try{localStorage.setItem('elsewhere_gkey',k);}catch(e){}} start(k); };
 document.getElementById('keySkip').onclick=()=>start(null);
-try{ const s=localStorage.getItem('elsewhere_gkey'); if(s) document.getElementById('keyInput').value=s; }catch(e){}
+(function(){ let k=GOOGLE_KEY; if(!k){ try{ k=localStorage.getItem('elsewhere_gkey')||''; }catch(e){} } if(k){ try{document.getElementById('keyInput').value=k;}catch(e){} start(k); } })();
 </script>
 <script type="module">
 // Meaning-search: a small AI model runs in the browser, reads each town's description,
