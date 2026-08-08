@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 27 -->
+<!-- Elsewhere build 30 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -98,6 +98,10 @@
   #pano{position:absolute;inset:0;z-index:25;display:none}
   #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
   #biz{position:absolute;right:22px;bottom:26px;z-index:21;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
+  #clearview{display:none;position:absolute;top:16px;right:16px;z-index:32;width:44px;height:44px;border:none;border-radius:50%;background:rgba(18,15,11,.62);backdrop-filter:blur(6px);color:#fff;font-size:20px;line-height:44px;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+  body.touch.inworld #clearview{display:block}
+  body.flymin #explore, body.flymin #infobar, body.flymin #legend, body.flymin #status, body.flymin #biz, body.flymin #sheet{opacity:0;pointer-events:none;transition:opacity .3s ease}
+  body.flymin #clearview{background:rgba(21,96,74,.85)}
   #bSeen{margin-top:8px}
   .seenbtn{width:100%;background:var(--terra);color:#fff;border:none;border-radius:20px;padding:10px 16px;font-family:var(--sans);font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.2px}
   #creator{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(18,15,11,.74);padding:20px}
@@ -129,6 +133,7 @@
   <div class="row">
     <button id="eFly">Fly</button>
     <button id="eStreet">Street View</button>
+    <button id="eDrive">Drive</button>
     <button id="eTrails">Trails</button>
     <button id="eInvert">Invert</button>
     <button class="back" id="eBack">Back to results</button>
@@ -173,6 +178,7 @@
 </div>
 <div id="joy" class="joy"><div class="joyk"></div></div>
 <div id="joy2" class="joy"><div class="joyk"></div></div>
+<button id="clearview" aria-label="Toggle panels">&#9776;</button>
 <div id="rotate">Rotate your phone sideways<span>Elsewhere flies best in landscape</span></div>
 <div id="pano"></div>
 <button id="panoExit">Back to the sky</button>
@@ -300,6 +306,7 @@ let flightMode=null, lastMode=null;      // 'fly' | 'drive' | null
 let fwdV=0, yawV=0, vertV=0, looking=false, invert=false, pano=null, carEntity=null, veh=null;
 let trailEnts=[], trailsOn=false, trailsLoaded=false;
 const isTouch = window.matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window);
+if(isTouch){ try{ document.body.classList.add('touch'); }catch(e){} }
 let lookX=0, lookY=0, movePid=null, lookPid=null, joyCx=0, joyCy=0, joy2Cx=0, joy2Cy=0;
 const moveVec={x:0,y:0}, turnVec={x:0,y:0}; let latV=0; const JOY_R=52;
 const keys={};
@@ -325,12 +332,12 @@ function initViewer(){
     let steer=(((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0)) + (isTouch? -turnVec.x : 0);
     if(invert) steer=-steer;
     const vin=Math.max(-1,Math.min(1, (((keys['KeyQ'])?1:0)-((keys['KeyE'])?1:0)) + (isTouch? -turnVec.y : 0) ));
-    const maxSpeed=(isTouch?150:300)*boost, accel=(isTouch?420:240)*boost, maxLat=(isTouch?115:0)*boost, maxYaw=(isTouch?0.9:1.0), maxVert=(isTouch?95:140)*boost;
-    const drag=isTouch?Math.pow(0.05,dt):Math.pow(0.4,dt);
+    const maxSpeed=(isTouch?90:180)*boost, accel=(isTouch?230:205)*boost, maxLat=(isTouch?75:0)*boost, maxYaw=(isTouch?0.5:0.72), maxVert=(isTouch?65:110)*boost;
+    const drag=isTouch?Math.pow(0.09,dt):Math.pow(0.4,dt);
     fwdV+=thr*accel*dt; fwdV*=drag; fwdV=Math.max(-maxSpeed,Math.min(maxSpeed,fwdV)); if(thr===0&&Math.abs(fwdV)<0.4)fwdV=0;
     latV+=lat*accel*dt; latV*=drag; latV=Math.max(-maxLat,Math.min(maxLat,latV)); if(lat===0&&Math.abs(latV)<0.4)latV=0;
-    yawV+=steer*2.6*dt; yawV*=Math.pow(0.03,dt); yawV=Math.max(-maxYaw,Math.min(maxYaw,yawV));
-    vertV+=vin*(isTouch?260:230)*dt; vertV*=Math.pow(isTouch?0.05:0.1,dt); vertV=Math.max(-maxVert,Math.min(maxVert,vertV)); if(vin===0&&Math.abs(vertV)<0.4)vertV=0;
+    yawV+=steer*(isTouch?1.5:2.6)*dt; yawV*=Math.pow(0.03,dt); yawV=Math.max(-maxYaw,Math.min(maxYaw,yawV));
+    vertV+=vin*(isTouch?170:230)*dt; vertV*=Math.pow(isTouch?0.09:0.1,dt); vertV=Math.max(-maxVert,Math.min(maxVert,vertV)); if(vin===0&&Math.abs(vertV)<0.4)vertV=0;
     const up=Cesium.Cartesian3.normalize(cam.positionWC,new Cesium.Cartesian3());
     if(yawV!==0) cam.look(up,yawV*dt);
     // R / F tilt the view up and down (survey the streets without diving)
@@ -421,7 +428,7 @@ function enterMode(m){
   updateTouchCtl();
 }
 function exploreTown(tn){
-  currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl(); clearTrails(); prefetchTrails(tn);
+  currentTown=tn; flightMode=null; lastMode=null; fwdV=0; yawV=0; updateTouchCtl(); clearTrails(); prefetchTrails(tn); try{document.body.classList.add('inworld');}catch(e){}
   document.getElementById('eFly').classList.remove('on');
   if(carEntity) carEntity.show=false;
   document.getElementById('panel').classList.add('hidden');
@@ -434,19 +441,32 @@ function exploreTown(tn){
   setLegend(null); showInfobar(true); closeSheet(); checkOrient();
   if(!viewer||!tilesetLoaded){ setStatus("Add a Google Maps API key to fly into "+tn.name+". The match still stands."); return; }
   setStatus(""); releaseCam(); clearPins();
-  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+2200), orientation:{heading:toRad(25),pitch:toRad(-45),roll:0}, duration:4.5,
-    complete:()=>{ orbitCenter=Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev); orbitHeading=toRad(25); orbiting=true; loadPlaces(tn); setStatus("Fly or drop into Street View. The tabs below hold about, landmarks, parks and homes."); setTimeout(()=>setStatus(""),5600); } });
+  viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(tn.lon,tn.lat,tn.elev+800), orientation:{heading:toRad(25),pitch:toRad(-32),roll:0}, duration:4.2,
+    complete:()=>{ loadPlaces(tn); enterMode('fly'); setStatus("You\u2019re flying over "+tn.name+". Ease around and get a feel for it. Tabs below hold about, landmarks, parks and homes."); setTimeout(()=>setStatus(""),5600); } });
 }
 document.getElementById('eFly').onclick=()=>enterMode('fly');
 document.getElementById('eStreet').onclick=()=>openStreetView();
+document.getElementById('eDrive').onclick=()=>openDrive();
+function openDrive(){
+  if(!currentTown) return;
+  const ov=document.getElementById('creator'), body=document.getElementById('creatorBody');
+  document.getElementById('creatorHandle').textContent='Drive mode \u00b7 preview';
+  const url='https://hop.earth/?lat='+currentTown.lat+'&lng='+currentTown.lon;
+  body.innerHTML='<div style="padding:18px;font-family:var(--sans);color:var(--ink);line-height:1.55">'
+    +'<p style="margin:0 0 10px;font-size:16px"><b>Take the wheel in '+esc(currentTown.name)+'.</b></p>'
+    +'<p style="margin:0 0 14px;font-size:14px">This preview opens <b>hop.earth</b>, a real browser driving world built from the same OpenStreetMap roads Elsewhere uses. You drive on actual streets, no melting buildings, no rails. In the finished product this lives right inside Elsewhere, styled to match, so you fly a town and then drop into your car without ever leaving.</p>'
+    +'<a class="homes-btn" style="display:block;text-align:center" target="_blank" rel="noopener" href="'+url+'">Drive '+esc(currentTown.name)+' &rarr;</a>'
+    +'<p class="src" style="margin-top:12px">If it doesn&rsquo;t drop you right in town, just search &ldquo;'+esc(currentTown.name)+', '+esc(currentTown.state)+'&rdquo; on hop.earth and click &ldquo;Hop Here.&rdquo;</p></div>';
+  ov.classList.add('show');
+}
 document.getElementById('eTrails').onclick=()=>toggleTrails();
 function drawTrail(coords){
-  const h=(currentTown?currentTown.elev:30)+5; const arr=[];
+  const h=(currentTown?currentTown.elev:30)+4; const arr=[];
   coords.forEach(c=>{ arr.push(c[0],c[1],h); });
-  const col=Cesium.Color.fromCssColorString('#ff7a2f');
-  const e=viewer.entities.add({ polyline:{ positions:Cesium.Cartesian3.fromDegreesArrayHeights(arr), width:6,
-    material:new Cesium.PolylineGlowMaterialProperty({glowPower:0.28,color:col}),
-    depthFailMaterial:new Cesium.ColorMaterialProperty(col.withAlpha(0.4)) } });
+  const col=Cesium.Color.fromCssColorString('#ff5a1f'), edge=Cesium.Color.fromCssColorString('#5c1e00');
+  const e=viewer.entities.add({ polyline:{ positions:Cesium.Cartesian3.fromDegreesArrayHeights(arr), width:9,
+    material:new Cesium.PolylineOutlineMaterialProperty({color:col, outlineColor:edge, outlineWidth:2}),
+    depthFailMaterial:new Cesium.PolylineOutlineMaterialProperty({color:col.withAlpha(0.5), outlineColor:edge.withAlpha(0.35), outlineWidth:2}) } });
   trailEnts.push(e);
 }
 const OVERPASS_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
@@ -485,8 +505,10 @@ function toggleTrails(){
 }
 function clearTrails(){ if(viewer) trailEnts.forEach(e=>viewer.entities.remove(e)); trailEnts=[]; trailsLoaded=false; trailsOn=false; const b=document.getElementById('eTrails'); if(b) b.classList.remove('on'); }
 document.getElementById('eInvert').onclick=(ev)=>{ invert=!invert; ev.target.classList.toggle('on', invert); };
+document.getElementById('clearview').onclick=()=>{ document.body.classList.toggle('flymin'); };
 document.getElementById('eBack').onclick=()=>{
   flightMode=null; lastMode=null; fwdV=0; yawV=0; releaseCam(); clearPins(); clearTrails(); setLegend(null); if(carEntity) carEntity.show=false;
+  try{document.body.classList.remove('inworld');document.body.classList.remove('flymin');}catch(e){}
   viewer.scene.screenSpaceCameraController.enableInputs=true;
   document.getElementById('eFly').classList.remove('on'); exitPano(); showInfobar(false); updateTouchCtl(); checkOrient();
   document.getElementById('explore').classList.remove('show');
@@ -520,9 +542,9 @@ function addPin(tn,place,cat){
   const loc=place.geometry.location, lon=loc.lng(), lat=loc.lat();
   const pin=pinBuilder().fromColor(Cesium.Color.fromCssColorString(CATCOLOR[cat]||CATCOLOR.default),42);
   const biz={name:place.name,cat:cat||'place',rating:place.rating,placeId:place.place_id,lon,lat,photo:(place.photos&&place.photos[0])?place.photos[0].getUrl({maxWidth:440,maxHeight:300}):null};
-  const ent=viewer.entities.add({ position:Cesium.Cartesian3.fromDegrees(lon,lat,tn.elev+8),
-    billboard:{image:pin,verticalOrigin:Cesium.VerticalOrigin.BOTTOM,disableDepthTestDistance:Number.POSITIVE_INFINITY,scale:0.9},
-    label:{text:place.name,font:'500 13px Hanken Grotesk, sans-serif',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.fromCssColorString('#1b1813'),outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-46),disableDepthTestDistance:Number.POSITIVE_INFINITY,showBackground:false,scale:0.9,show:false,verticalOrigin:Cesium.VerticalOrigin.BOTTOM} });
+  const ent=viewer.entities.add({ position:Cesium.Cartesian3.fromDegrees(lon,lat,tn.elev+4),
+    billboard:{image:pin,verticalOrigin:Cesium.VerticalOrigin.BOTTOM,disableDepthTestDistance:Number.POSITIVE_INFINITY,scale:0.85},
+    label:{text:place.name,font:'600 13px Hanken Grotesk, sans-serif',fillColor:Cesium.Color.WHITE,style:Cesium.LabelStyle.FILL,pixelOffset:new Cesium.Cartesian2(0,-42),disableDepthTestDistance:Number.POSITIVE_INFINITY,showBackground:true,backgroundColor:Cesium.Color.fromCssColorString('#1b1813').withAlpha(0.88),backgroundPadding:new Cesium.Cartesian2(9,6),scale:0.9,show:false,verticalOrigin:Cesium.VerticalOrigin.BOTTOM} });
   ent.biz=biz; pinEntities.push(ent);
 }
 function loadPlaces(tn){
