@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 30 -->
+<!-- Elsewhere build 31 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -99,6 +99,14 @@
   #panoExit{position:absolute;top:22px;right:22px;z-index:26;display:none;background:rgba(20,17,12,.85);color:#f0e9da;border:none;border-radius:10px;padding:11px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.3)}
   #biz{position:absolute;right:22px;bottom:26px;z-index:21;width:320px;display:none;background:rgba(244,238,223,.97);backdrop-filter:blur(8px);border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}
   #clearview{display:none;position:absolute;top:16px;right:16px;z-index:32;width:44px;height:44px;border:none;border-radius:50%;background:rgba(18,15,11,.62);backdrop-filter:blur(6px);color:#fff;font-size:20px;line-height:44px;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+  #tour{position:absolute;left:50%;transform:translateX(-50%);bottom:88px;z-index:26;width:min(440px,92vw);display:none;background:rgba(244,238,223,.98);backdrop-filter:blur(8px);border-radius:16px;padding:16px 18px;box-shadow:0 16px 46px rgba(0,0,0,.34)}
+  #tour.show{display:block}
+  #tour .tour-prog{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terra);margin-bottom:4px}
+  #tour .tour-title{font-family:var(--serif);font-size:21px;color:var(--ink);margin-bottom:6px}
+  #tour .tour-blurb{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--ink);margin-bottom:12px}
+  #tour .tour-row{display:flex;gap:10px;justify-content:flex-end}
+  #tour button{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:20px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+  #tour button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
   body.touch.inworld #clearview{display:block}
   body.flymin #explore, body.flymin #infobar, body.flymin #legend, body.flymin #status, body.flymin #biz, body.flymin #sheet{opacity:0;pointer-events:none;transition:opacity .3s ease}
   body.flymin #clearview{background:rgba(21,96,74,.85)}
@@ -132,6 +140,7 @@
   <div class="eb" id="eBlurb"></div>
   <div class="row">
     <button id="eFly">Fly</button>
+    <button id="eTour">Tour</button>
     <button id="eStreet">Street View</button>
     <button id="eDrive">Drive</button>
     <button id="eTrails">Trails</button>
@@ -149,6 +158,12 @@
     <div class="brow"><button id="bFly">Fly here</button><a id="bMap" class="prim" target="_blank" rel="noopener">Peek inside</a></div>
     <div id="bSeen"></div>
   </div>
+</div>
+<div id="tour">
+  <div class="tour-prog" id="tourProg"></div>
+  <div class="tour-title" id="tourTitle"></div>
+  <div class="tour-blurb" id="tourBlurb"></div>
+  <div class="tour-row"><button id="tourEnd">End tour</button><button id="tourNext" class="prim">Next &rarr;</button></div>
 </div>
 <div id="creator">
   <div class="creator-card">
@@ -260,6 +275,17 @@ const DESC={
 "Ithaca":"A dramatic college town of gorges and waterfalls at the head of Cayuga Lake, home to Cornell, progressive and intellectual. Reads collegiate, outdoorsy, progressive, intellectual, and scenic."
 };
 window.TOWNS=TOWNS; window.DESC=DESC;
+// Guided "auto tour" stops per town. A curated flythrough with a card at each stop.
+const TOURS={
+"New Canaan":[
+ {q:"God's Acre, New Canaan CT", name:"Downtown & God's Acre", blurb:"The heart of town: the historic churches on God's Acre, with Elm Street's shops and cafes fanning out below. Population ~20,600, a classic walkable New England village core."},
+ {q:"Elm Street, New Canaan CT", name:"Elm Street shopping", blurb:"The main shopping and dining stretch, boutiques, restaurants, and a genuinely walkable village center that anchors daily life."},
+ {q:"New Canaan High School, CT", name:"New Canaan High School", blurb:"Consistently ranked among Connecticut's top public high schools, a major reason families move here."},
+ {q:"New Canaan train station, CT", name:"Metro-North station", blurb:"The New Canaan branch line, about an hour to Grand Central. The commuter lifeline that made the town."},
+ {q:"Waveny Park, New Canaan CT", name:"Waveny Park", blurb:"300 acres of trails, fields, and the Waveny mansion, the town's outdoor living room."},
+ {q:"Grace Farms, New Canaan CT", name:"Grace Farms", blurb:"A striking SANAA-designed arts, nature, and community space just north of town, and a nod to New Canaan's midcentury-modern design legacy."}
+]
+};
 const idx={}; T.forEach((k,i)=>idx[k]=i);
 // ---------- MATCHING ----------
 const TAGWORDS={records:["record store","record shop","vinyl","records"],hiking:["hiking","hike","trail","trails","outdoors","backpack"],dogParks:["dog park","dog-friendly","dog friendly","dogs"],historic:["historic","architecture","old buildings","victorian","federal","colonial","antique","antiques","brick"],arts:["art","arts","gallery","galleries","creative","music","museum","culture","maker"],walkable:["walkable","walk","pedestrian","main street","downtown"],foodie:["food","foodie","restaurant","restaurants","dining","chef","culinary","farm to table"],college:["college","university","campus","student"],river:["river","riverfront","creek","waterfront"],mountains:["mountain","mountains","peaks","alpine"],coast:["coast","coastal","ocean","beach","sea","bay","lake","lakefront","waterfront"],quaint:["quaint","charming","cute","charm","picturesque","cozy","village"]};
@@ -445,18 +471,48 @@ function exploreTown(tn){
     complete:()=>{ loadPlaces(tn); enterMode('fly'); setStatus("You\u2019re flying over "+tn.name+". Ease around and get a feel for it. Tabs below hold about, landmarks, parks and homes."); setTimeout(()=>setStatus(""),5600); } });
 }
 document.getElementById('eFly').onclick=()=>enterMode('fly');
+document.getElementById('eTour').onclick=()=>startTour();
+let tourStops=null, tourIdx=0, tourTimer=null;
+function startTour(){
+  if(!currentTown||!viewer||!tilesetLoaded) return;
+  tourStops=TOURS[currentTown.name];
+  if(!tourStops||!tourStops.length){ setStatus("A guided tour for this town is coming soon."); setTimeout(()=>setStatus(""),2800); return; }
+  showInfobar(false); document.getElementById('biz').classList.remove('show'); tourIdx=0; flyToTourStop(0);
+}
+function flyToTourStop(i){
+  if(!tourStops) return;
+  if(i<0||i>=tourStops.length){ endTour(); return; }
+  tourIdx=i; const s=tourStops[i]; clearTimeout(tourTimer);
+  flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on');
+  viewer.scene.screenSpaceCameraController.enableInputs=false;
+  const frame=(lon,lat)=>{ const t=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+8);
+    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,170),{offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-28),560),duration:3.0}); };
+  if(placesSvc&&window.google&&google.maps){ try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
+    if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) frame(res[0].geometry.location.lng(),res[0].geometry.location.lat());
+    else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
+  }); }catch(e){ frame(s.lon||currentTown.lon,s.lat||currentTown.lat); } }
+  else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
+  const el=document.getElementById('tour'); el.classList.add('show');
+  document.getElementById('tourProg').textContent='Stop '+(i+1)+' of '+tourStops.length;
+  document.getElementById('tourTitle').textContent=s.name;
+  document.getElementById('tourBlurb').textContent=s.blurb;
+  document.getElementById('tourNext').textContent=(i+1>=tourStops.length)?'Finish':'Next \u2192';
+  tourTimer=setTimeout(()=>flyToTourStop(i+1),14000);
+}
+function endTour(){ clearTimeout(tourTimer); tourStops=null; document.getElementById('tour').classList.remove('show'); showInfobar(true); enterMode('fly'); }
+document.getElementById('tourNext').onclick=()=>flyToTourStop(tourIdx+1);
+document.getElementById('tourEnd').onclick=()=>endTour();
 document.getElementById('eStreet').onclick=()=>openStreetView();
 document.getElementById('eDrive').onclick=()=>openDrive();
 function openDrive(){
   if(!currentTown) return;
   const ov=document.getElementById('creator'), body=document.getElementById('creatorBody');
   document.getElementById('creatorHandle').textContent='Drive mode \u00b7 preview';
-  const url='https://hop.earth/?lat='+currentTown.lat+'&lng='+currentTown.lon;
+  const url='https://hop.earth/';
   body.innerHTML='<div style="padding:18px;font-family:var(--sans);color:var(--ink);line-height:1.55">'
-    +'<p style="margin:0 0 10px;font-size:16px"><b>Take the wheel in '+esc(currentTown.name)+'.</b></p>'
-    +'<p style="margin:0 0 14px;font-size:14px">This preview opens <b>hop.earth</b>, a real browser driving world built from the same OpenStreetMap roads Elsewhere uses. You drive on actual streets, no melting buildings, no rails. In the finished product this lives right inside Elsewhere, styled to match, so you fly a town and then drop into your car without ever leaving.</p>'
-    +'<a class="homes-btn" style="display:block;text-align:center" target="_blank" rel="noopener" href="'+url+'">Drive '+esc(currentTown.name)+' &rarr;</a>'
-    +'<p class="src" style="margin-top:12px">If it doesn&rsquo;t drop you right in town, just search &ldquo;'+esc(currentTown.name)+', '+esc(currentTown.state)+'&rdquo; on hop.earth and click &ldquo;Hop Here.&rdquo;</p></div>';
+    +'<p style="margin:0 0 10px;font-size:16px"><b>Drive the streets of '+esc(currentTown.name)+'.</b></p>'
+    +'<p style="margin:0 0 14px;font-size:14px">This opens <b>hop.earth</b>, a real browser driving world built from the same OpenStreetMap roads Elsewhere uses. On hop.earth, type <b>&ldquo;'+esc(currentTown.name)+', '+esc(currentTown.state)+'&rdquo;</b> into its search, then click <b>Hop Here</b> to drop in and drive real streets, no melting buildings, no rails. In the finished product this lives right inside Elsewhere so you fly a town then drive it without ever leaving.</p>'
+    +'<a class="homes-btn" style="display:block;text-align:center" target="_blank" rel="noopener" href="'+url+'">Open hop.earth &rarr;</a></div>';
   ov.classList.add('show');
 }
 document.getElementById('eTrails').onclick=()=>toggleTrails();
@@ -466,7 +522,7 @@ function drawTrail(coords){
   const col=Cesium.Color.fromCssColorString('#ff5a1f'), edge=Cesium.Color.fromCssColorString('#5c1e00');
   const e=viewer.entities.add({ polyline:{ positions:Cesium.Cartesian3.fromDegreesArrayHeights(arr), width:9,
     material:new Cesium.PolylineOutlineMaterialProperty({color:col, outlineColor:edge, outlineWidth:2}),
-    depthFailMaterial:new Cesium.PolylineOutlineMaterialProperty({color:col.withAlpha(0.5), outlineColor:edge.withAlpha(0.35), outlineWidth:2}) } });
+    depthFailMaterial:new Cesium.ColorMaterialProperty(col.withAlpha(0.55)) } });
   trailEnts.push(e);
 }
 const OVERPASS_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
