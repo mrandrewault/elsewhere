@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 31 -->
+<!-- Elsewhere build 32 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -208,6 +208,7 @@
     <small>The key streams Google&rsquo;s 3D tiles and looks up nearby places. Restrict it to your domain. Nothing is stored except in this browser.</small>
   </div>
 </div>
+<script src="trails-data.js"></script>
 <script>
 // ---------- TOWN DATA ----------
 const T=["records","hiking","dogParks","historic","arts","walkable","foodie","college","river","mountains","coast","quaint"];
@@ -533,12 +534,15 @@ function overpassFetch(query){
   return next();
 }
 function prefetchTrails(tn){
+  if(window.BAKED_TRAILS && window.BAKED_TRAILS[tn.name]) return;
   try{ if(localStorage.getItem('elsewhere_trails_'+tn.name)) return; }catch(e){}
   const S=(tn.lat-0.035).toFixed(4),N=(tn.lat+0.035).toFixed(4),W=(tn.lon-0.045).toFixed(4),E=(tn.lon+0.045).toFixed(4);
   const Q='[out:json][timeout:25];(way["highway"~"path|footway|track|bridleway"]('+S+','+W+','+N+','+E+');way["route"="hiking"]('+S+','+W+','+N+','+E+'););out geom;';
   overpassFetch(Q).then(d=>{ const ways=(d.elements||[]).filter(x=>x.type==='way'&&x.geometry&&x.geometry.length>1).slice(0,500); if(ways.length){ const list=ways.map(w=>w.geometry.map(g=>[g.lon,g.lat])); try{ localStorage.setItem('elsewhere_trails_'+tn.name,JSON.stringify(list)); }catch(e){} } }).catch(()=>{});
 }
 function loadTrails(tn){
+  const baked = window.BAKED_TRAILS && window.BAKED_TRAILS[tn.name];
+  if(baked && baked.length){ baked.forEach(c=>drawTrail(c)); trailsLoaded=true; return; }
   const key='elsewhere_trails_'+tn.name;
   try{ const s=localStorage.getItem(key); if(s){ const list=JSON.parse(s); if(list&&list.length){ list.forEach(c=>drawTrail(c)); trailsLoaded=true; setStatus(list.length+" trail segments"); setTimeout(()=>setStatus(""),1600); return; } } }catch(e){}
   const S=(tn.lat-0.035).toFixed(4),N=(tn.lat+0.035).toFixed(4),W=(tn.lon-0.045).toFixed(4),E=(tn.lon+0.045).toFixed(4);
