@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere Build 24 : face-the-front camera per stop, card clearance + faster stops, low-and-close framing, five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 25 : homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -139,6 +139,26 @@
   .as-card .as-row button{flex:1;padding:11px;border-radius:11px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
   .as-card .as-row button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
   .as-card .as-note{font-family:var(--sans);font-size:11.5px;color:#a39c8b;margin-top:10px;line-height:1.4}
+  #hometour{position:absolute;left:50%;transform:translateX(-50%);bottom:88px;z-index:26;width:min(440px,92vw);display:none;background:rgba(244,238,223,.98);backdrop-filter:blur(8px);border-radius:16px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,.34)}
+  #hometour.show{display:block}
+  #hometour #htImg{width:100%;height:168px;object-fit:cover;display:block;background:#ddd4c2}
+  #hometour .ht-body{padding:14px 18px 16px}
+  #hometour .ht-prog{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terra);margin-bottom:4px}
+  #hometour .ht-price{font-family:var(--serif);font-size:23px;color:var(--ink);line-height:1.1}
+  #hometour .ht-addr{font-family:var(--sans);font-size:13.5px;color:var(--body);margin-top:2px}
+  #hometour .ht-spec{font-family:var(--sans);font-size:13px;color:var(--ink);margin-top:8px;line-height:1.45}
+  #hometour .ht-row{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px}
+  #hometour .ht-row button,#hometour .ht-row a{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:20px;padding:9px 15px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none}
+  #hometour .ht-row #htFull{margin-right:auto;color:var(--terra);border-color:var(--terra)}
+  #hometour .ht-row button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .home-ctrl{display:flex;gap:8px;margin:2px 0 12px}
+  .home-ctrl select{flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:13px;background:#fff;color:var(--ink)}
+  .home-fly{width:100%;background:var(--teal);color:#fff;border:none;border-radius:11px;padding:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;margin-bottom:6px}
+  .home-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+  .home-item:hover .hi-addr{color:var(--teal)}
+  .hi-price{font-family:var(--serif);font-size:16px;color:var(--ink);flex:none}
+  .hi-addr{font-family:var(--sans);font-size:13px;color:var(--ink)}
+  .hi-spec{font-family:var(--sans);font-size:11.5px;color:#a39c8b;margin-top:1px}
   body.touch.inworld #clearview{display:block}
   body.flymin #explore, body.flymin #infobar, body.flymin #legend, body.flymin #status, body.flymin #biz, body.flymin #sheet{opacity:0;pointer-events:none;transition:opacity .3s ease}
   body.flymin #clearview{background:rgba(21,96,74,.85)}
@@ -226,6 +246,16 @@
     <div class="as-check"><input type="checkbox" id="asTop10"><label for="asTop10">Include in the Top 10 tour</label></div>
     <div class="as-row"><button id="asCancel">Cancel</button><button id="asSave" class="prim">Save spot</button></div>
     <div class="as-note" id="asNote"></div>
+  </div>
+</div>
+<div id="hometour">
+  <img id="htImg" alt="" style="display:none">
+  <div class="ht-body">
+    <div class="ht-prog" id="htProg"></div>
+    <div class="ht-price" id="htPrice"></div>
+    <div class="ht-addr" id="htAddr"></div>
+    <div class="ht-spec" id="htSpec"></div>
+    <div class="ht-row"><button id="htEnd">End</button><a id="htFull" target="_blank" rel="noopener">Full listing &rarr;</a><button id="htNext" class="prim">Next &rarr;</button></div>
   </div>
 </div>
 <div id="creator">
@@ -617,7 +647,7 @@ const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20, TOUR_LIFT=70, TOUR_DWELL_
 // ----- the tour menu: pick one of five themes -----
 function startTour(){
   if(!currentTown||!viewer||!tilesetLoaded) return;
-  clearTimeout(tourTimer); tourStops=null;
+  clearTimeout(tourTimer); tourStops=null; clearTimeout(homeTimer); homeList=null; document.getElementById('hometour').classList.remove('show');
   document.getElementById('tour').classList.remove('show');
   buildTourMenu();
   document.getElementById('biz').classList.remove('show'); showInfobar(false);
@@ -778,6 +808,98 @@ function exportTour(){
   else { console.log(text); setStatus("Data is in the console (F12)."); setTimeout(()=>setStatus(""),3600); }
 }
 document.getElementById('tmExport').onclick=exportTour;
+
+// ================= HOMES: a demo "for sale / for rent" flythrough =================
+// SAMPLE listings only (no MLS). Swap this object for a real feed later; the UI stays the same.
+// status: 'sale' price is total; 'rent' price is per month. lat/lon place the flyover + the Street View photo.
+const HOMES={
+"New Canaan":[
+ {addr:"12 Oenoke Ridge", lat:41.1552, lon:-73.4968, status:"sale", price:3950000, beds:5, baths:5.5, sqft:5600, feat:"Pool, 3-car garage, chef's kitchen, 2 acres"},
+ {addr:"88 Smith Ridge Road", lat:41.1691, lon:-73.4889, status:"sale", price:2150000, beds:4, baths:3.5, sqft:3800, feat:"Renovated colonial, 2-car garage, level yard"},
+ {addr:"45 Weed Street", lat:41.1524, lon:-73.5031, status:"sale", price:1295000, beds:3, baths:2.5, sqft:2400, feat:"Walk to town, updated kitchen, screened porch"},
+ {addr:"300 Ponus Ridge", lat:41.1402, lon:-73.5098, status:"sale", price:8500000, beds:6, baths:7, sqft:9200, feat:"Gated estate, pool, tennis, 4-car garage"},
+ {addr:"17 Locust Avenue", lat:41.1461, lon:-73.4922, status:"sale", price:4750000, beds:5, baths:6, sqft:6100, feat:"In-town, pool, guest suite, walk to train"},
+ {addr:"76 West Road", lat:41.1603, lon:-73.5004, status:"sale", price:5900000, beds:5, baths:6.5, sqft:7000, feat:"Pool, guest house, wooded 3 acres"},
+ {addr:"210 Wahackme Road", lat:41.1352, lon:-73.4981, status:"sale", price:2850000, beds:4, baths:4, sqft:4000, feat:"Cul-de-sac, 2 acres, 2-car garage"},
+ {addr:"22 Elm Street, Unit 4", lat:41.1469, lon:-73.4949, status:"rent", price:6500, beds:2, baths:2, sqft:1400, feat:"Downtown condo, elevator, steps from the shops"},
+ {addr:"155 Country Club Road", lat:41.1511, lon:-73.4863, status:"rent", price:12000, beds:4, baths:4, sqft:4200, feat:"Pool, level yard, near the club"},
+ {addr:"9 Park Street", lat:41.1452, lon:-73.4971, status:"rent", price:8900, beds:3, baths:2.5, sqft:2100, feat:"Townhouse, walk to train and Elm Street"}
+]
+};
+const HOME_SALE_BUCKETS=[{label:"Any price",min:0,max:1e12},{label:"Under $1.5M",min:0,max:1500000},{label:"$1.5M to $3M",min:1500000,max:3000000},{label:"$3M to $5M",min:3000000,max:5000000},{label:"$5M and up",min:5000000,max:1e12}];
+const HOME_RENT_BUCKETS=[{label:"Any price",min:0,max:1e12},{label:"Under $7k/mo",min:0,max:7000},{label:"$7k to $12k/mo",min:7000,max:12000},{label:"$12k+/mo",min:12000,max:1e12}];
+const HOME_RANGE=150, HOME_PITCH=-26, HOME_LIFT=45, HOME_DWELL_MS=6000;
+let homeStatus='sale', homeBucket=0, homeList=null, homeIdx=0, homeTimer=null;
+
+function bearingDeg(aLat,aLon,bLat,bLon){ const y=Math.sin(toRad(bLon-aLon))*Math.cos(toRad(bLat)); const x=Math.cos(toRad(aLat))*Math.sin(toRad(bLat))-Math.sin(toRad(aLat))*Math.cos(toRad(bLat))*Math.cos(toRad(bLon-aLon)); return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+// Frame a point low and close, swung to face it from the nearest street (its front). Shared shape with the tour.
+function faceFrontFrame(lon,lat,opts){ opts=opts||{};
+  const range=opts.range||TOUR_RANGE, pitch=(opts.pitch!=null?opts.pitch:TOUR_PITCH), lift=(opts.lift!=null?opts.lift:TOUR_LIFT);
+  const doFrame=(hd)=>{ const brg=(hd+180)*Math.PI/180;
+    const alat=lat+(Math.cos(brg)*lift)/110540, alon=lon+(Math.sin(brg)*lift)/(111320*Math.cos(lat*Math.PI/180));
+    const t=Cesium.Cartesian3.fromDegrees(alon,alat,(currentTown?currentTown.elev:30)+6);
+    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,55),{offset:new Cesium.HeadingPitchRange(toRad(hd),toRad(pitch),range),duration:3.0}); };
+  if(opts.heading!=null){ doFrame(opts.heading); return; }
+  if(TOUR_FACE_FRONT&&window.google&&google.maps){ try{
+    new google.maps.StreetViewService().getPanorama({location:{lat:lat,lng:lon},radius:70,source:google.maps.StreetViewSource.OUTDOOR},(data,st)=>{
+      let hd=TOUR_HEADING; if(st==='OK'&&data&&data.location&&data.location.latLng){ const p=data.location.latLng; hd=bearingDeg(p.lat(),p.lng(),lat,lon); } doFrame(hd); });
+  }catch(e){ doFrame(TOUR_HEADING); } } else doFrame(TOUR_HEADING); }
+
+function fmtHomePrice(h){ if(h.status==='rent') return '$'+h.price.toLocaleString()+'/mo'; return '$'+h.price.toLocaleString(); }
+function streetViewImg(lat,lon){ const k=window.__gkey||''; if(!k) return ''; return 'https://maps.googleapis.com/maps/api/streetview?size=480x300&location='+lat+','+lon+'&fov=80&pitch=8&key='+encodeURIComponent(k); }
+function homeFullUrl(h){ return 'https://www.zillow.com/homes/'+encodeURIComponent(h.addr+', '+(currentTown?currentTown.name+', '+currentTown.state:''))+'_rb/'; }
+function homesMatching(){ const town=currentTown&&HOMES[currentTown.name]?HOMES[currentTown.name]:[]; const buckets=homeStatus==='sale'?HOME_SALE_BUCKETS:HOME_RENT_BUCKETS; const b=buckets[homeBucket]||buckets[0];
+  return town.filter(h=>h.status===homeStatus&&h.price>=b.min&&h.price<b.max).sort((a,b)=>a.price-b.price); }
+
+function startHomeTour(list,startIdx){
+  if(!viewer||!tilesetLoaded){ setStatus("Add the Google key to fly the homes. The list still shows."); setTimeout(()=>setStatus(""),3200); return; }
+  if(!list||!list.length){ setStatus("No homes in that range."); setTimeout(()=>setStatus(""),2500); return; }
+  closeSheet(); document.getElementById('biz').classList.remove('show');
+  document.getElementById('tour').classList.remove('show'); document.getElementById('tourMenu').classList.remove('show');
+  showInfobar(false); homeList=list; flyToHome(startIdx||0);
+}
+function flyToHome(i){
+  if(!homeList) return;
+  if(i<0||i>=homeList.length){ endHomeTour(); return; }
+  homeIdx=i; const h=homeList[i]; clearTimeout(homeTimer);
+  flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on');
+  viewer.scene.screenSpaceCameraController.enableInputs=false;
+  faceFrontFrame(h.lon,h.lat,{range:HOME_RANGE,pitch:HOME_PITCH,lift:HOME_LIFT,heading:h.heading});
+  const img=document.getElementById('htImg'); const src=streetViewImg(h.lat,h.lon);
+  if(src){ img.onerror=()=>{img.style.display='none';}; img.onload=()=>{img.style.display='block';}; img.src=src; } else { img.style.display='none'; }
+  document.getElementById('htProg').textContent=(homeStatus==='sale'?'For sale':'For rent')+' · '+(i+1)+' of '+homeList.length;
+  document.getElementById('htPrice').textContent=fmtHomePrice(h);
+  document.getElementById('htAddr').textContent=h.addr+(currentTown?', '+currentTown.name+', '+currentTown.state:'');
+  document.getElementById('htSpec').textContent=h.beds+' bd · '+h.baths+' ba · '+h.sqft.toLocaleString()+' sq ft — '+h.feat;
+  document.getElementById('htFull').href=homeFullUrl(h);
+  document.getElementById('htNext').textContent=(i+1>=homeList.length)?'Finish':'Next →';
+  document.getElementById('hometour').classList.add('show');
+  homeTimer=setTimeout(()=>flyToHome(i+1),HOME_DWELL_MS);
+}
+function endHomeTour(){ clearTimeout(homeTimer); homeList=null; document.getElementById('hometour').classList.remove('show'); showInfobar(true); enterMode('fly'); }
+document.getElementById('htNext').onclick=()=>flyToHome(homeIdx+1);
+document.getElementById('htEnd').onclick=()=>endHomeTour();
+// pause the auto-advance if they open the full listing
+document.getElementById('htFull').onclick=()=>{ clearTimeout(homeTimer); };
+
+function renderHomesTab(){
+  const tn=currentTown; const body=document.getElementById('sheetBody');
+  const buckets=homeStatus==='sale'?HOME_SALE_BUCKETS:HOME_RENT_BUCKETS;
+  if(homeBucket>=buckets.length) homeBucket=0;
+  let html='<h3>Homes in '+esc(tn.name)+'</h3>';
+  html+='<div class="home-ctrl"><select id="hStatus"><option value="sale"'+(homeStatus==='sale'?' selected':'')+'>For sale</option><option value="rent"'+(homeStatus==='rent'?' selected':'')+'>For rent</option></select>';
+  html+='<select id="hBucket">'+buckets.map((b,i)=>'<option value="'+i+'"'+(i===homeBucket?' selected':'')+'>'+esc(b.label)+'</option>').join('')+'</select></div>';
+  const list=homesMatching();
+  html+='<button class="home-fly" id="hFly">Fly through these '+(list.length?('('+list.length+')'):'')+'</button>';
+  if(!list.length){ html+='<p class="empty" style="padding:10px 2px">No sample homes in that range. Try another price band.</p>'; }
+  else { list.forEach((h,i)=>{ html+='<div class="home-item" data-i="'+i+'"><div><div class="hi-addr">'+esc(h.addr)+'</div><div class="hi-spec">'+h.beds+' bd · '+h.baths+' ba · '+h.sqft.toLocaleString()+' sq ft</div></div><div class="hi-price">'+esc(fmtHomePrice(h))+'</div></div>'; }); }
+  html+='<p class="src" style="margin-top:14px">Sample listings, demo data only. A launch version plugs in a licensed MLS or a paid listings feed with no other changes.</p>';
+  body.innerHTML=html;
+  document.getElementById('hStatus').onchange=(e)=>{ homeStatus=e.target.value; homeBucket=0; renderHomesTab(); };
+  document.getElementById('hBucket').onchange=(e)=>{ homeBucket=+e.target.value; renderHomesTab(); };
+  document.getElementById('hFly').onclick=()=>startHomeTour(homesMatching(),0);
+  body.querySelectorAll('.home-item').forEach(el=>{ el.onclick=()=>startHomeTour(homesMatching(),+el.dataset.i); });
+}
 document.getElementById('eStreet').onclick=()=>openStreetView();
 document.getElementById('eDrive').onclick=()=>openDrive();
 function openDrive(){
@@ -842,8 +964,8 @@ function clearTrails(){ if(viewer) trailEnts.forEach(e=>viewer.entities.remove(e
 document.getElementById('eInvert').onclick=(ev)=>{ invert=!invert; ev.target.classList.toggle('on', invert); };
 document.getElementById('clearview').onclick=()=>{ document.body.classList.toggle('flymin'); };
 document.getElementById('eBack').onclick=()=>{
-  clearTimeout(tourTimer); tourStops=null;
-  document.getElementById('tour').classList.remove('show'); document.getElementById('tourMenu').classList.remove('show'); document.getElementById('addspot').classList.remove('show');
+  clearTimeout(tourTimer); tourStops=null; clearTimeout(homeTimer); homeList=null;
+  document.getElementById('tour').classList.remove('show'); document.getElementById('tourMenu').classList.remove('show'); document.getElementById('addspot').classList.remove('show'); document.getElementById('hometour').classList.remove('show');
   flightMode=null; lastMode=null; fwdV=0; yawV=0; releaseCam(); clearPins(); clearTrails(); setLegend(null); if(carEntity) carEntity.show=false;
   try{document.body.classList.remove('inworld');document.body.classList.remove('flymin');}catch(e){}
   viewer.scene.screenSpaceCameraController.enableInputs=true;
@@ -1191,11 +1313,7 @@ function renderTab(tab){
       +'<p class="src" style="margin-top:14px">Short and long-term rentals. Becomes affiliate revenue once your Booking.com and Vrbo programs are set.</p>';
     return;
   }
-  if(tab==='homes'){
-    const url='https://www.zillow.com/homes/'+encodeURIComponent(tn.name+', '+tn.state)+'/';
-    body.innerHTML='<h3>Homes for sale</h3><p>See what is on the market in '+esc(tn.name)+' right now. This opens a live search in a new tab.</p><a class="homes-btn" target="_blank" rel="noopener" href="'+url+'">Search homes on Zillow &rarr;</a><p class="src" style="margin-top:14px">Proof of concept. A launch version would show listings inline through a licensed MLS feed.</p>';
-    return;
-  }
+  if(tab==='homes'){ renderHomesTab(); return; }
   if(tab==='about'){
     if(cache.about){ body.innerHTML=cache.about; return; }
     body.innerHTML='<h3>'+esc(tn.name)+'</h3><div class="loading">Reading up on '+esc(tn.name)+'&hellip;</div>';
@@ -1252,7 +1370,7 @@ function renderTab(tab){
 
 // ---------- GATE ----------
 function loadGoogleMapsJS(key){ window.__gmapsReady=()=>{ try{ placesSvc=new google.maps.places.PlacesService(document.createElement('div')); }catch(e){console.warn(e);} }; const s=document.createElement('script'); s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&loading=async&callback=__gmapsReady'; s.async=true; document.head.appendChild(s); }
-function start(key){ document.getElementById('gate').style.display='none'; try{ initViewer(); }catch(e){ console.error(e); setStatus("3D view failed to start. The vibe search still works."); } if(key&&viewer){ loadTiles(key); loadGoogleMapsJS(key); } }
+function start(key){ window.__gkey=key||''; document.getElementById('gate').style.display='none'; try{ initViewer(); }catch(e){ console.error(e); setStatus("3D view failed to start. The vibe search still works."); } if(key&&viewer){ loadTiles(key); loadGoogleMapsJS(key); } }
 document.getElementById('keyGo').onclick=()=>{ const k=document.getElementById('keyInput').value.trim(); if(k){try{localStorage.setItem('elsewhere_gkey',k);}catch(e){}} start(k); };
 document.getElementById('keySkip').onclick=()=>start(null);
 (function(){ function go(k){ if(!k){ try{ k=localStorage.getItem('elsewhere_gkey')||''; }catch(e){} } if(k){ try{document.getElementById('keyInput').value=k;}catch(e){} start(k); } }
