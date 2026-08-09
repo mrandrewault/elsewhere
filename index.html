@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 32 -->
+<!-- Elsewhere build 33 : five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -107,6 +107,38 @@
   #tour .tour-row{display:flex;gap:10px;justify-content:flex-end}
   #tour button{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:20px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
   #tour button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
+  #tourMenu{position:absolute;left:50%;transform:translateX(-50%);bottom:88px;z-index:27;width:min(440px,92vw);display:none;background:rgba(244,238,223,.98);backdrop-filter:blur(8px);border-radius:16px;padding:16px 18px;box-shadow:0 16px 46px rgba(0,0,0,.34)}
+  #tourMenu.show{display:block}
+  #tourMenu .tm-h{font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:2px}
+  #tourMenu .tm-s{font-family:var(--sans);font-size:12px;color:#a39c8b;margin-bottom:12px}
+  .tm-opt{width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:var(--sans)}
+  .tm-opt:hover{border-color:var(--teal-lt)}
+  .tm-opt .tm-nm{font-weight:600;font-size:14px;color:var(--ink)}
+  .tm-opt .tm-d{font-size:11.5px;color:var(--body);margin-top:2px;line-height:1.35}
+  .tm-opt .tm-ct{flex:none;font-size:11px;font-weight:700;color:var(--teal);background:rgba(21,96,74,.09);border-radius:20px;padding:4px 9px}
+  .tm-opt[disabled]{opacity:.5;cursor:default}
+  .tm-opt[disabled]:hover{border-color:var(--line)}
+  #tourMenu .tm-auth{margin-top:6px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px}
+  #tourMenu .tm-auth button{font-family:var(--sans);font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--body);border-radius:20px;padding:7px 12px;cursor:pointer}
+  #tourMenu .tm-auth button:hover{border-color:var(--teal-lt);color:var(--ink)}
+  #tourMenu .tm-close{margin-top:10px;width:100%;background:none;border:none;color:#a39c8b;font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline}
+  #addspot{position:absolute;inset:0;z-index:62;display:none;align-items:center;justify-content:center;background:rgba(18,15,11,.74);padding:20px}
+  #addspot.show{display:flex}
+  .as-card{background:#f4eedf;border-radius:16px;max-width:460px;width:100%;max-height:90%;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.45);padding:20px 22px}
+  .as-card h3{font-family:var(--serif);font-weight:500;font-size:21px;margin-bottom:4px;color:var(--ink)}
+  .as-card .as-sub{font-family:var(--sans);font-size:12.5px;color:var(--body);margin-bottom:14px;line-height:1.45}
+  .as-card label{display:block;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--body);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+  .as-card input[type=text],.as-card textarea,.as-card select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;background:#fff;color:var(--ink)}
+  .as-card textarea{min-height:60px;resize:vertical}
+  .as-card .as-radio{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .as-card .as-radio label{display:flex;align-items:flex-start;gap:8px;text-transform:none;letter-spacing:0;font-weight:500;font-size:13px;color:var(--ink);margin:0}
+  .as-card .as-radio input,.as-card .as-check input{margin-top:2px;flex:none}
+  .as-card .as-check{display:flex;align-items:center;gap:8px;margin-top:14px}
+  .as-card .as-check label{margin:0;text-transform:none;letter-spacing:0;font-weight:500;font-size:13px;color:var(--ink)}
+  .as-card .as-row{display:flex;gap:10px;margin-top:18px}
+  .as-card .as-row button{flex:1;padding:11px;border-radius:11px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .as-card .as-row button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .as-card .as-note{font-family:var(--sans);font-size:11.5px;color:#a39c8b;margin-top:10px;line-height:1.4}
   body.touch.inworld #clearview{display:block}
   body.flymin #explore, body.flymin #infobar, body.flymin #legend, body.flymin #status, body.flymin #biz, body.flymin #sheet{opacity:0;pointer-events:none;transition:opacity .3s ease}
   body.flymin #clearview{background:rgba(21,96,74,.85)}
@@ -164,6 +196,37 @@
   <div class="tour-title" id="tourTitle"></div>
   <div class="tour-blurb" id="tourBlurb"></div>
   <div class="tour-row"><button id="tourEnd">End tour</button><button id="tourNext" class="prim">Next &rarr;</button></div>
+</div>
+<div id="tourMenu">
+  <div class="tm-h" id="tmTitle">Take a tour</div>
+  <div class="tm-s">Pick a theme. Each one flies you spot to spot with a card at every stop.</div>
+  <div id="tmOpts"></div>
+  <div class="tm-auth">
+    <button id="tmAdd">+ Add a spot</button>
+    <button id="tmGoogle">Auto-fill from Google</button>
+    <button id="tmExport">Export tour data</button>
+  </div>
+  <button class="tm-close" id="tmClose">Close</button>
+</div>
+<div id="addspot">
+  <div class="as-card">
+    <h3 id="asTitle">Add a spot</h3>
+    <div class="as-sub">Add your own place to this town's tour. It saves in this browser. Use Export when you want to bake it into the app for good.</div>
+    <label for="asName">Name</label>
+    <input type="text" id="asName" placeholder="e.g. Rosie Restaurant" autocomplete="off">
+    <label for="asCat">Category</label>
+    <select id="asCat"></select>
+    <label for="asBlurb">Blurb (optional)</label>
+    <textarea id="asBlurb" placeholder="A short line about why this spot matters."></textarea>
+    <label>Where is it</label>
+    <div class="as-radio">
+      <label><input type="radio" name="asLoc" value="cam" id="asLocCam"><span>Right here (use the exact view I'm flying now)</span></label>
+      <label><input type="radio" name="asLoc" value="name" id="asLocName" checked><span>Look it up by name on Google when the tour plays</span></label>
+    </div>
+    <div class="as-check"><input type="checkbox" id="asTop10"><label for="asTop10">Include in the Top 10 tour</label></div>
+    <div class="as-row"><button id="asCancel">Cancel</button><button id="asSave" class="prim">Save spot</button></div>
+    <div class="as-note" id="asNote"></div>
+  </div>
 </div>
 <div id="creator">
   <div class="creator-card">
@@ -276,17 +339,85 @@ const DESC={
 "Ithaca":"A dramatic college town of gorges and waterfalls at the head of Cayuga Lake, home to Cornell, progressive and intellectual. Reads collegiate, outdoorsy, progressive, intellectual, and scenic."
 };
 window.TOWNS=TOWNS; window.DESC=DESC;
-// Guided "auto tour" stops per town. A curated flythrough with a card at each stop.
-const TOURS={
+// ---------- TOUR DATA ----------
+// One master list of spots per town. Every spot carries a category (cat) and an
+// optional top10 flag. The five tours are just filters over this list, so you add a
+// spot once and it shows up in the right themed tour automatically.
+// Optional per-spot fields:
+//   q     : a Google search string used to place the stop (falls back to name + town)
+//   view  : an exact camera {lon,lat,height,heading,pitch} that replays precisely (press G while flying to copy one)
+//   lon,lat: a plain point to frame if there is no exact view
+const TOUR_SPOTS={
 "New Canaan":[
- {q:"God's Acre, New Canaan CT", name:"Downtown & God's Acre", blurb:"The heart of town: the historic churches on God's Acre, with Elm Street's shops and cafes fanning out below. Population ~20,600, a classic walkable New England village core."},
- {q:"Elm Street, New Canaan CT", name:"Elm Street shopping", blurb:"The main shopping and dining stretch, boutiques, restaurants, and a genuinely walkable village center that anchors daily life."},
- {q:"New Canaan High School, CT", name:"New Canaan High School", blurb:"Consistently ranked among Connecticut's top public high schools, a major reason families move here."},
- {q:"New Canaan train station, CT", name:"Metro-North station", blurb:"The New Canaan branch line, about an hour to Grand Central. The commuter lifeline that made the town."},
- {q:"Waveny Park, New Canaan CT", name:"Waveny Park", blurb:"300 acres of trails, fields, and the Waveny mansion, the town's outdoor living room."},
- {q:"Grace Farms, New Canaan CT", name:"Grace Farms", blurb:"A striking SANAA-designed arts, nature, and community space just north of town, and a nod to New Canaan's midcentury-modern design legacy."}
+ {q:"New Canaan Town Hall, New Canaan CT", name:"Town Hall", cat:"townhall", blurb:"The civic center of town on Main Street, steps from the shops."},
+ {q:"God's Acre, New Canaan CT", name:"God's Acre", cat:"landmark", top10:true, blurb:"The historic hilltop churches at the heart of the village, with Elm Street fanning out below."},
+ {q:"New Canaan train station, CT", name:"Train station", cat:"station", blurb:"The New Canaan branch line, about an hour to Grand Central. The commuter lifeline that built the town."},
+ {q:"Waveny Park, New Canaan CT", name:"Waveny Park", cat:"park", top10:true, blurb:"300 acres of trails, fields, and the Waveny mansion, the town's outdoor living room."},
+ {q:"Grace Farms, New Canaan CT", name:"Grace Farms", cat:"art", top10:true, blurb:"A SANAA-designed arts, nature, and community space, a nod to the town's modern-design legacy."},
+ {q:"Irwin Park, New Canaan CT", name:"Irwin Park", cat:"park", blurb:"Waterfront lawns and walking paths, dog-friendly and easy."},
+ {q:"Elm Street, New Canaan CT", name:"Elm Street shopping", cat:"shopping", top10:true, blurb:"The main shopping and dining stretch, a genuinely walkable village center."},
+ {q:"Rosie, New Canaan CT", name:"Rosie's Restaurant", cat:"restaurant", top10:true, blurb:"A beloved local restaurant, a real neighborhood favorite."},
+ {q:"New Canaan Music, New Canaan CT", name:"New Canaan Music", cat:"music", blurb:"The town's music shop, instruments and lessons for local families."},
+ {q:"Elm Street Books, New Canaan CT", name:"Elm Street Books", cat:"bookstore", top10:true, blurb:"The independent bookstore in the heart of the village."},
+ {q:"New Canaan Museum & Historical Society, New Canaan CT", name:"New Canaan Museum & Historical Society", cat:"museum", top10:true, blurb:"The town's history under one roof, on a historic campus near God's Acre."},
+ {q:"The Glass House, New Canaan CT", name:"The Glass House", cat:"museum", blurb:"Philip Johnson's landmark modernist house and grounds, the icon of the town's architecture story."},
+ {q:"New Canaan Country Club, New Canaan CT", name:"New Canaan Country Club", cat:"outdoor", blurb:"The private club with golf and tennis, a fixture of local life."},
+ {q:"New Canaan YMCA, New Canaan CT", name:"New Canaan YMCA", cat:"gym", top10:true, blurb:"The community gym and pool, where the town works out and kids learn to swim."},
+ {q:"Sama Yoga, New Canaan CT", name:"Sama Yoga", cat:"yoga", blurb:"A local yoga studio for classes and drop-ins."},
+ {q:"Club Pilates, New Canaan CT", name:"Club Pilates", cat:"pilates", blurb:"Reformer pilates classes right in town."},
+ {q:"Gofer Ice Cream, New Canaan CT", name:"Gofer Ice Cream", cat:"icecream", top10:true, blurb:"The go-to ice cream stop on a summer night."},
+ {q:"Van Leeuwen Ice Cream, New Canaan CT", name:"Van Leeuwen Ice Cream", cat:"icecream", blurb:"A second scoop shop right in the village."},
+ {q:"New Canaan Playhouse, New Canaan CT", name:"New Canaan Playhouse", cat:"theater", blurb:"The town's movie house right on the main drag."},
+ {q:"Powerhouse Theatre, Waveny Park, New Canaan CT", name:"Town Players at Powerhouse Theater", cat:"theater", blurb:"Community theater in the Powerhouse at Waveny Park."},
+ {q:"La Dolce, New Canaan CT", name:"La Dolce Coffee Shop", cat:"cafe", blurb:"A cozy coffee stop for a morning cup."},
+ {q:"Hashi Sushi, New Canaan CT", name:"Hashi Sushi", cat:"restaurant", blurb:"The local sushi spot."},
+ {q:"Locali Pizza Bar, New Canaan CT", name:"Locali", cat:"pizza", blurb:"Wood-fired pizza and a lively bar, a go-to for a good pie."},
+ {q:"Chef Prasad, New Canaan CT", name:"Chef Prasad", cat:"restaurant", blurb:"Refined Indian cooking in the village."},
+ {q:"Walter Stewart's Market, New Canaan CT", name:"Walter Stewart's Grocery Store", cat:"grocery", blurb:"The independent market that has fed the town for generations."},
+ {q:"New Canaan Nature Center, New Canaan CT", name:"New Canaan Nature Center", cat:"nature", blurb:"40 acres of trails, meadows, and birding in the middle of town."},
+ {q:"New Canaan High School, CT", name:"New Canaan High School", cat:"school", blurb:"Consistently among Connecticut's top public high schools, a major draw for families."},
+ {q:"St. Mark's Episcopal Church, New Canaan CT", name:"St. Mark's Church", cat:"church", blurb:"One of the town's historic churches, part of the fabric of village life."}
 ]
 };
+// Category -> which of the four themed tours it belongs to. Long shows all; Top 10 is flag-based.
+const TOUR_THEMES=[
+ {key:"long",  label:"The full tour",  desc:"Everything, top to bottom",              cats:null},
+ {key:"food",  label:"Food & drinks",  desc:"Restaurants, bars, cafes, sweets",        cats:["restaurant","bar","cafe","brewery","icecream","pizza","bakery","winery","grocery","deli"]},
+ {key:"arts",  label:"Arts & culture", desc:"Books, records, film, galleries, museums", cats:["bookstore","record","music","theater","museum","gallery","art","library"]},
+ {key:"parks", label:"Parks & rec",    desc:"Parks, trails, gyms, studios, the outdoors",cats:["park","trail","gym","yoga","pilates","nature","outdoor","fitness"]},
+ {key:"top10", label:"Top 10",         desc:"A mixed best-of, plus schools & churches", cats:null, top10:true}
+];
+// The full category list the add-a-spot form offers, grouped for the dropdown.
+const CAT_GROUPS=[
+ ["Get your bearings",[["landmark","Landmark / green"],["shopping","Shopping street"],["station","Train / transit"],["townhall","Town hall"]]],
+ ["Food & drinks",[["restaurant","Restaurant"],["bar","Bar"],["cafe","Cafe / coffee"],["brewery","Brewery"],["pizza","Pizza"],["icecream","Ice cream"],["bakery","Bakery"],["winery","Winery"],["deli","Deli"],["grocery","Grocery"]]],
+ ["Arts & culture",[["bookstore","Bookstore"],["record","Record store"],["music","Music shop"],["theater","Movie theater / playhouse"],["museum","Museum"],["gallery","Art gallery"],["art","Arts space"],["library","Library"]]],
+ ["Parks & rec",[["park","Park"],["trail","Trail"],["nature","Nature center"],["gym","Gym / YMCA"],["yoga","Yoga studio"],["pilates","Pilates studio"],["outdoor","Outdoor / other"]]],
+ ["Community",[["school","School"],["church","Church"],["clothing","Clothing store"]]]
+];
+// Google Places passes used by Auto-fill. Each maps a search to one of our categories.
+const GOOGLE_FILL=[
+ {type:"restaurant",cat:"restaurant",n:3},{type:"cafe",cat:"cafe",n:2},{type:"bar",cat:"bar",n:2},
+ {type:"bakery",cat:"bakery",n:1},{keyword:"pizza",cat:"pizza",n:1},{keyword:"ice cream",cat:"icecream",n:1},
+ {type:"book_store",cat:"bookstore",n:1},{keyword:"record store",cat:"record",n:1},{type:"movie_theater",cat:"theater",n:1},
+ {type:"museum",cat:"museum",n:1},{type:"art_gallery",cat:"gallery",n:1},{type:"library",cat:"library",n:1},
+ {type:"park",cat:"park",n:2},{type:"gym",cat:"gym",n:2},{keyword:"yoga",cat:"yoga",n:1},{keyword:"pilates",cat:"pilates",n:1},
+ {type:"grocery_or_supermarket",cat:"grocery",n:1}
+];
+// ---- spot storage: baked list + the user's own added spots (this browser) ----
+function userSpots(town){ try{ const s=localStorage.getItem('elsewhere_spots_'+town); if(s){ const a=JSON.parse(s); if(Array.isArray(a)) return a; } }catch(e){} return []; }
+function saveUserSpots(town,arr){ try{ localStorage.setItem('elsewhere_spots_'+town,JSON.stringify(arr)); }catch(e){} }
+function allSpots(town){ return (TOUR_SPOTS[town]||[]).concat(userSpots(town)); }
+function stopsForTheme(town,theme){
+  const spots=allSpots(town);
+  if(theme.key==='long') return spots;
+  if(theme.key==='top10'){
+    const flagged=spots.filter(s=>s.top10);
+    const civic=spots.filter(s=>(s.cat==='school'||s.cat==='church')&&!s.top10);
+    return flagged.concat(civic).slice(0,12);
+  }
+  return spots.filter(s=>theme.cats.indexOf(s.cat)>=0);
+}
 const idx={}; T.forEach((k,i)=>idx[k]=i);
 // ---------- MATCHING ----------
 const TAGWORDS={records:["record store","record shop","vinyl","records"],hiking:["hiking","hike","trail","trails","outdoors","backpack"],dogParks:["dog park","dog-friendly","dog friendly","dogs"],historic:["historic","architecture","old buildings","victorian","federal","colonial","antique","antiques","brick"],arts:["art","arts","gallery","galleries","creative","music","museum","culture","maker"],walkable:["walkable","walk","pedestrian","main street","downtown"],foodie:["food","foodie","restaurant","restaurants","dining","chef","culinary","farm to table"],college:["college","university","campus","student"],river:["river","riverfront","creek","waterfront"],mountains:["mountain","mountains","peaks","alpine"],coast:["coast","coastal","ocean","beach","sea","bay","lake","lakefront","waterfront"],quaint:["quaint","charming","cute","charm","picturesque","cozy","village"]};
@@ -473,12 +604,33 @@ function exploreTown(tn){
 }
 document.getElementById('eFly').onclick=()=>enterMode('fly');
 document.getElementById('eTour').onclick=()=>startTour();
-let tourStops=null, tourIdx=0, tourTimer=null;
+let tourStops=null, tourIdx=0, tourTimer=null, tourThemeLabel='';
+
+// ----- the tour menu: pick one of five themes -----
 function startTour(){
   if(!currentTown||!viewer||!tilesetLoaded) return;
-  tourStops=TOURS[currentTown.name];
-  if(!tourStops||!tourStops.length){ setStatus("A guided tour for this town is coming soon."); setTimeout(()=>setStatus(""),2800); return; }
-  showInfobar(false); document.getElementById('biz').classList.remove('show'); tourIdx=0; flyToTourStop(0);
+  clearTimeout(tourTimer); tourStops=null;
+  document.getElementById('tour').classList.remove('show');
+  buildTourMenu();
+  document.getElementById('biz').classList.remove('show'); showInfobar(false);
+  document.getElementById('tourMenu').classList.add('show');
+}
+function buildTourMenu(){
+  document.getElementById('tmTitle').textContent='Tour '+currentTown.name;
+  const box=document.getElementById('tmOpts'); box.innerHTML='';
+  TOUR_THEMES.forEach(th=>{
+    const n=stopsForTheme(currentTown.name,th).length;
+    const b=document.createElement('button'); b.className='tm-opt'; if(!n) b.setAttribute('disabled','');
+    b.innerHTML='<span><span class="tm-nm">'+esc(th.label)+'</span><span class="tm-d">'+esc(th.desc)+'</span></span><span class="tm-ct">'+n+(n===1?' stop':' stops')+'</span>';
+    if(n) b.onclick=()=>runTour(th);
+    box.appendChild(b);
+  });
+}
+function runTour(theme){
+  const stops=stopsForTheme(currentTown.name,theme);
+  if(!stops.length){ setStatus("No stops in that tour yet. Add some or auto-fill from Google."); setTimeout(()=>setStatus(""),3000); return; }
+  document.getElementById('tourMenu').classList.remove('show');
+  tourStops=stops; tourThemeLabel=theme.label; tourIdx=0; flyToTourStop(0);
 }
 function flyToTourStop(i){
   if(!tourStops) return;
@@ -488,21 +640,117 @@ function flyToTourStop(i){
   viewer.scene.screenSpaceCameraController.enableInputs=false;
   const frame=(lon,lat)=>{ const t=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+8);
     viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,170),{offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-28),560),duration:3.0}); };
-  if(placesSvc&&window.google&&google.maps){ try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
+  if(s.view&&s.view.lon!=null){
+    // an exact saved camera replays precisely (captured with the G key)
+    viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(s.view.lon,s.view.lat,s.view.height),orientation:{heading:toRad(s.view.heading),pitch:toRad(s.view.pitch),roll:0},duration:3.0});
+  } else if(placesSvc&&window.google&&google.maps){ try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
     if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) frame(res[0].geometry.location.lng(),res[0].geometry.location.lat());
     else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
   }); }catch(e){ frame(s.lon||currentTown.lon,s.lat||currentTown.lat); } }
   else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
   const el=document.getElementById('tour'); el.classList.add('show');
-  document.getElementById('tourProg').textContent='Stop '+(i+1)+' of '+tourStops.length;
+  document.getElementById('tourProg').textContent=(tourThemeLabel?tourThemeLabel+' \u00b7 ':'')+'Stop '+(i+1)+' of '+tourStops.length;
   document.getElementById('tourTitle').textContent=s.name;
-  document.getElementById('tourBlurb').textContent=s.blurb;
+  document.getElementById('tourBlurb').textContent=s.blurb||'';
   document.getElementById('tourNext').textContent=(i+1>=tourStops.length)?'Finish':'Next \u2192';
   tourTimer=setTimeout(()=>flyToTourStop(i+1),14000);
 }
 function endTour(){ clearTimeout(tourTimer); tourStops=null; document.getElementById('tour').classList.remove('show'); showInfobar(true); enterMode('fly'); }
 document.getElementById('tourNext').onclick=()=>flyToTourStop(tourIdx+1);
 document.getElementById('tourEnd').onclick=()=>endTour();
+document.getElementById('tmClose').onclick=()=>{ document.getElementById('tourMenu').classList.remove('show'); showInfobar(true); };
+
+// ----- press G while flying: copy a paste-ready stop line with the exact camera -----
+function copyCamLine(){
+  if(!viewer) return;
+  try{
+    const cam=viewer.camera, c=cam.positionCartographic;
+    const lon=+Cesium.Math.toDegrees(c.longitude).toFixed(6), lat=+Cesium.Math.toDegrees(c.latitude).toFixed(6);
+    const height=+c.height.toFixed(1), heading=+Cesium.Math.toDegrees(cam.heading).toFixed(1), pitch=+Cesium.Math.toDegrees(cam.pitch).toFixed(1);
+    const line=' {q:"", name:"", blurb:"", cat:"", top10:false, view:{lon:'+lon+',lat:'+lat+',height:'+height+',heading:'+heading+',pitch:'+pitch+'}},';
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(line).then(()=>{ setStatus("Camera copied. Paste it into this town's tour list."); setTimeout(()=>setStatus(""),3200); }).catch(()=>{ setStatus("Copy blocked. Line in the console."); console.log(line); setTimeout(()=>setStatus(""),3200); }); }
+    else { console.log(line); setStatus("Camera line is in the console (F12)."); setTimeout(()=>setStatus(""),3200); }
+  }catch(e){}
+}
+
+// ----- add a spot by hand -----
+function fillCatSelect(){
+  const sel=document.getElementById('asCat'); if(sel.options.length) return;
+  CAT_GROUPS.forEach(g=>{ const og=document.createElement('optgroup'); og.label=g[0];
+    g[1].forEach(c=>{ const o=document.createElement('option'); o.value=c[0]; o.textContent=c[1]; og.appendChild(o); });
+    sel.appendChild(og); });
+}
+function openAddSpot(){
+  if(!currentTown){ return; }
+  fillCatSelect();
+  document.getElementById('asTitle').textContent='Add a spot to '+currentTown.name;
+  document.getElementById('asName').value=''; document.getElementById('asBlurb').value='';
+  document.getElementById('asTop10').checked=false; document.getElementById('asLocName').checked=true;
+  const note=document.getElementById('asNote');
+  note.textContent=(viewer&&tilesetLoaded)?'Tip: fly to the spot first, then choose "Right here" to lock the exact view.':'';
+  document.getElementById('tourMenu').classList.remove('show');
+  document.getElementById('addspot').classList.add('show');
+}
+function saveSpot(){
+  const name=document.getElementById('asName').value.trim();
+  if(!name){ document.getElementById('asNote').textContent='Give the spot a name first.'; return; }
+  const cat=document.getElementById('asCat').value;
+  const blurb=document.getElementById('asBlurb').value.trim();
+  const top10=document.getElementById('asTop10').checked;
+  const useCam=document.getElementById('asLocCam').checked;
+  const spot={ name:name, cat:cat, blurb:blurb, top10:top10, q:name+', '+currentTown.name+', '+currentTown.state };
+  if(useCam&&viewer){ try{ const cam=viewer.camera,c=cam.positionCartographic;
+    spot.view={lon:+Cesium.Math.toDegrees(c.longitude).toFixed(6),lat:+Cesium.Math.toDegrees(c.latitude).toFixed(6),height:+c.height.toFixed(1),heading:+Cesium.Math.toDegrees(cam.heading).toFixed(1),pitch:+Cesium.Math.toDegrees(cam.pitch).toFixed(1)}; }catch(e){} }
+  const arr=userSpots(currentTown.name); arr.push(spot); saveUserSpots(currentTown.name,arr);
+  document.getElementById('addspot').classList.remove('show');
+  setStatus('Added "'+name+'" to '+currentTown.name+'.'); setTimeout(()=>setStatus(""),2600);
+  buildTourMenu(); document.getElementById('tourMenu').classList.add('show');
+}
+document.getElementById('tmAdd').onclick=openAddSpot;
+document.getElementById('asCancel').onclick=()=>{ document.getElementById('addspot').classList.remove('show'); document.getElementById('tourMenu').classList.add('show'); };
+document.getElementById('asSave').onclick=saveSpot;
+document.getElementById('addspot').onclick=(e)=>{ if(e.target.id==='addspot'){ e.currentTarget.classList.remove('show'); document.getElementById('tourMenu').classList.add('show'); } };
+
+// ----- auto-fill the town's list from Google Places -----
+function googleFill(){
+  if(!currentTown){ return; }
+  if(!placesSvc||!window.google||!google.maps){ setStatus("Auto-fill needs the Google key with Places enabled."); setTimeout(()=>setStatus(""),3400); return; }
+  const town=currentTown.name;
+  const have={}; allSpots(town).forEach(s=>have[(s.name||'').toLowerCase()]=true);
+  const loc=new google.maps.LatLng(currentTown.lat,currentTown.lon);
+  const added=[]; let done=0; const total=GOOGLE_FILL.length;
+  setStatus("Pulling spots from Google\u2026");
+  GOOGLE_FILL.forEach(item=>{
+    const req={location:loc,radius:2600}; if(item.type)req.type=item.type; if(item.keyword)req.keyword=item.keyword;
+    placesSvc.nearbySearch(req,(res,st)=>{
+      if(st===google.maps.places.PlacesServiceStatus.OK&&res){
+        res.filter(p=>p.name&&p.geometry&&p.geometry.location).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,item.n).forEach(p=>{
+          const key=p.name.toLowerCase(); if(have[key])return; have[key]=true;
+          added.push({name:p.name,cat:item.cat,blurb:p.rating?('Rated '+p.rating+' on Google.'):'',top10:false,q:p.name+', '+town+', '+currentTown.state,lon:p.geometry.location.lng(),lat:p.geometry.location.lat(),src:'google'});
+        });
+      }
+      done++; if(done>=total){ finishFill(); }
+    });
+  });
+  function finishFill(){
+    if(!added.length){ setStatus("Google found nothing new to add."); setTimeout(()=>setStatus(""),2800); return; }
+    const arr=userSpots(town).concat(added); saveUserSpots(town,arr);
+    setStatus("Added "+added.length+" spots from Google. Review and edit any time."); setTimeout(()=>setStatus(""),3600);
+    buildTourMenu();
+  }
+}
+document.getElementById('tmGoogle').onclick=googleFill;
+
+// ----- export the town's full list as paste-ready code -----
+function exportTour(){
+  if(!currentTown){ return; }
+  const town=currentTown.name; const data=allSpots(town);
+  const obj={}; obj[town]=data;
+  const text=JSON.stringify(obj,null,1);
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>{ setStatus("Copied "+data.length+" stops. Paste into TOUR_SPOTS in the file."); setTimeout(()=>setStatus(""),3600); }).catch(()=>{ console.log(text); setStatus("Copy blocked. Data is in the console (F12)."); setTimeout(()=>setStatus(""),3600); }); }
+  else { console.log(text); setStatus("Data is in the console (F12)."); setTimeout(()=>setStatus(""),3600); }
+}
+document.getElementById('tmExport').onclick=exportTour;
 document.getElementById('eStreet').onclick=()=>openStreetView();
 document.getElementById('eDrive').onclick=()=>openDrive();
 function openDrive(){
@@ -567,6 +815,8 @@ function clearTrails(){ if(viewer) trailEnts.forEach(e=>viewer.entities.remove(e
 document.getElementById('eInvert').onclick=(ev)=>{ invert=!invert; ev.target.classList.toggle('on', invert); };
 document.getElementById('clearview').onclick=()=>{ document.body.classList.toggle('flymin'); };
 document.getElementById('eBack').onclick=()=>{
+  clearTimeout(tourTimer); tourStops=null;
+  document.getElementById('tour').classList.remove('show'); document.getElementById('tourMenu').classList.remove('show'); document.getElementById('addspot').classList.remove('show');
   flightMode=null; lastMode=null; fwdV=0; yawV=0; releaseCam(); clearPins(); clearTrails(); setLegend(null); if(carEntity) carEntity.show=false;
   try{document.body.classList.remove('inworld');document.body.classList.remove('flymin');}catch(e){}
   viewer.scene.screenSpaceCameraController.enableInputs=true;
@@ -584,6 +834,7 @@ window.addEventListener('keydown',e=>{
   if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
   keys[e.code]=true;
   if(flightMode && ['KeyW','KeyS','KeyA','KeyD','KeyQ','KeyE','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if(e.code==='KeyG' && flightMode==='fly' && !e.repeat){ copyCamLine(); }
   if(document.getElementById('explore').classList.contains('show') && !e.repeat){
     if(e.code==='Tab'){ cyclePin(e.shiftKey?-1:1); e.preventDefault(); }
     else if(e.code==='Enter'){ if(focusEnt) flyToBiz(focusEnt.biz); e.preventDefault(); }
