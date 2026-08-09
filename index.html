@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere build 33 : five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 23 : tour card clearance + faster stops, low-and-close framing, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -609,7 +609,9 @@ let tourStops=null, tourIdx=0, tourTimer=null, tourThemeLabel='';
 // TOUR_RANGE  = how far the camera sits from the spot in meters (smaller = closer / lower).
 // TOUR_PITCH  = the down-angle in degrees (closer to 0 = more level and eye-height).
 // TOUR_HEADING= the compass direction the camera looks from.
-const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20;
+// TOUR_LIFT   = how far up the screen to nudge the spot (meters) so the info card does not cover it.
+// TOUR_DWELL_MS = how long the tour waits at each stop before auto-advancing.
+const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20, TOUR_LIFT=70, TOUR_DWELL_MS=8400;
 
 // ----- the tour menu: pick one of five themes -----
 function startTour(){
@@ -643,7 +645,12 @@ function flyToTourStop(i){
   tourIdx=i; const s=tourStops[i]; clearTimeout(tourTimer);
   flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
-  const frame=(lon,lat)=>{ const t=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+6);
+  const frame=(lon,lat)=>{
+    // Aim a little toward the camera so the real spot rides higher in the frame, clearing the card below.
+    const brg=(TOUR_HEADING+180)*Math.PI/180;
+    const alat=lat+(Math.cos(brg)*TOUR_LIFT)/110540;
+    const alon=lon+(Math.sin(brg)*TOUR_LIFT)/(111320*Math.cos(lat*Math.PI/180));
+    const t=Cesium.Cartesian3.fromDegrees(alon,alat,(currentTown?currentTown.elev:30)+6);
     viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,60),{offset:new Cesium.HeadingPitchRange(toRad(TOUR_HEADING),toRad(TOUR_PITCH),TOUR_RANGE),duration:3.0}); };
   if(s.view&&s.view.lon!=null){
     // an exact saved camera replays precisely (captured with the G key)
@@ -658,7 +665,7 @@ function flyToTourStop(i){
   document.getElementById('tourTitle').textContent=s.name;
   document.getElementById('tourBlurb').textContent=s.blurb||'';
   document.getElementById('tourNext').textContent=(i+1>=tourStops.length)?'Finish':'Next \u2192';
-  tourTimer=setTimeout(()=>flyToTourStop(i+1),14000);
+  tourTimer=setTimeout(()=>flyToTourStop(i+1),TOUR_DWELL_MS);
 }
 function endTour(){ clearTimeout(tourTimer); tourStops=null; document.getElementById('tour').classList.remove('show'); showInfobar(true); enterMode('fly'); }
 document.getElementById('tourNext').onclick=()=>flyToTourStop(tourIdx+1);
