@@ -605,6 +605,11 @@ function exploreTown(tn){
 document.getElementById('eFly').onclick=()=>enterMode('fly');
 document.getElementById('eTour').onclick=()=>startTour();
 let tourStops=null, tourIdx=0, tourTimer=null, tourThemeLabel='';
+// Default framing for a tour stop that has no exact saved view.
+// TOUR_RANGE  = how far the camera sits from the spot in meters (smaller = closer / lower).
+// TOUR_PITCH  = the down-angle in degrees (closer to 0 = more level and eye-height).
+// TOUR_HEADING= the compass direction the camera looks from.
+const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20;
 
 // ----- the tour menu: pick one of five themes -----
 function startTour(){
@@ -638,8 +643,8 @@ function flyToTourStop(i){
   tourIdx=i; const s=tourStops[i]; clearTimeout(tourTimer);
   flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
-  const frame=(lon,lat)=>{ const t=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+8);
-    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,170),{offset:new Cesium.HeadingPitchRange(toRad(20),toRad(-28),560),duration:3.0}); };
+  const frame=(lon,lat)=>{ const t=Cesium.Cartesian3.fromDegrees(lon,lat,(currentTown?currentTown.elev:30)+6);
+    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,60),{offset:new Cesium.HeadingPitchRange(toRad(TOUR_HEADING),toRad(TOUR_PITCH),TOUR_RANGE),duration:3.0}); };
   if(s.view&&s.view.lon!=null){
     // an exact saved camera replays precisely (captured with the G key)
     viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(s.view.lon,s.view.lat,s.view.height),orientation:{heading:toRad(s.view.heading),pitch:toRad(s.view.pitch),roll:0},duration:3.0});
