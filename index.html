@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere Build 23 : tour card clearance + faster stops, low-and-close framing, five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 24 : face-the-front camera per stop, card clearance + faster stops, low-and-close framing, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -611,7 +611,8 @@ let tourStops=null, tourIdx=0, tourTimer=null, tourThemeLabel='';
 // TOUR_HEADING= the compass direction the camera looks from.
 // TOUR_LIFT   = how far up the screen to nudge the spot (meters) so the info card does not cover it.
 // TOUR_DWELL_MS = how long the tour waits at each stop before auto-advancing.
-const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20, TOUR_LIFT=70, TOUR_DWELL_MS=8400;
+// TOUR_FACE_FRONT = when true, swing the camera to look from the street toward each place (usually its front). false = keep one fixed angle.
+const TOUR_RANGE=230, TOUR_PITCH=-30, TOUR_HEADING=20, TOUR_LIFT=70, TOUR_DWELL_MS=8400, TOUR_FACE_FRONT=true;
 
 // ----- the tour menu: pick one of five themes -----
 function startTour(){
@@ -645,21 +646,35 @@ function flyToTourStop(i){
   tourIdx=i; const s=tourStops[i]; clearTimeout(tourTimer);
   flightMode=null; releaseCam(); document.getElementById('eFly').classList.remove('on');
   viewer.scene.screenSpaceCameraController.enableInputs=false;
-  const frame=(lon,lat)=>{
+  const frame=(lon,lat,heading)=>{
+    const hd=(heading==null?TOUR_HEADING:heading);
     // Aim a little toward the camera so the real spot rides higher in the frame, clearing the card below.
-    const brg=(TOUR_HEADING+180)*Math.PI/180;
+    const brg=(hd+180)*Math.PI/180;
     const alat=lat+(Math.cos(brg)*TOUR_LIFT)/110540;
     const alon=lon+(Math.sin(brg)*TOUR_LIFT)/(111320*Math.cos(lat*Math.PI/180));
     const t=Cesium.Cartesian3.fromDegrees(alon,alat,(currentTown?currentTown.elev:30)+6);
-    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,60),{offset:new Cesium.HeadingPitchRange(toRad(TOUR_HEADING),toRad(TOUR_PITCH),TOUR_RANGE),duration:3.0}); };
+    viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(t,60),{offset:new Cesium.HeadingPitchRange(toRad(hd),toRad(TOUR_PITCH),TOUR_RANGE),duration:3.0}); };
+  const bearing=(aLat,aLon,bLat,bLon)=>{ const y=Math.sin(toRad(bLon-aLon))*Math.cos(toRad(bLat)); const x=Math.cos(toRad(aLat))*Math.sin(toRad(bLat))-Math.sin(toRad(aLat))*Math.cos(toRad(bLat))*Math.cos(toRad(bLon-aLon)); return (Math.atan2(y,x)*180/Math.PI+360)%360; };
+  // Decide the angle: a hand-set heading wins, else look from the nearest street toward the place (its front), else the default.
+  const aimAt=(lon,lat)=>{
+    if(s.heading!=null){ frame(lon,lat,s.heading); return; }
+    if(TOUR_FACE_FRONT&&window.google&&google.maps){ try{
+      new google.maps.StreetViewService().getPanorama({location:{lat:lat,lng:lon},radius:70,source:google.maps.StreetViewSource.OUTDOOR},(data,st)=>{
+        let hd=TOUR_HEADING;
+        if(st==='OK'&&data&&data.location&&data.location.latLng){ const p=data.location.latLng; hd=bearing(p.lat(),p.lng(),lat,lon); }
+        frame(lon,lat,hd);
+      });
+    }catch(e){ frame(lon,lat,TOUR_HEADING); } }
+    else frame(lon,lat,TOUR_HEADING);
+  };
   if(s.view&&s.view.lon!=null){
     // an exact saved camera replays precisely (captured with the G key)
     viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(s.view.lon,s.view.lat,s.view.height),orientation:{heading:toRad(s.view.heading),pitch:toRad(s.view.pitch),roll:0},duration:3.0});
   } else if(placesSvc&&window.google&&google.maps){ try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
-    if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) frame(res[0].geometry.location.lng(),res[0].geometry.location.lat());
-    else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
-  }); }catch(e){ frame(s.lon||currentTown.lon,s.lat||currentTown.lat); } }
-  else frame(s.lon||currentTown.lon,s.lat||currentTown.lat);
+    if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) aimAt(res[0].geometry.location.lng(),res[0].geometry.location.lat());
+    else aimAt(s.lon||currentTown.lon,s.lat||currentTown.lat);
+  }); }catch(e){ aimAt(s.lon||currentTown.lon,s.lat||currentTown.lat); } }
+  else aimAt(s.lon||currentTown.lon,s.lat||currentTown.lat);
   const el=document.getElementById('tour'); el.classList.add('show');
   document.getElementById('tourProg').textContent=(tourThemeLabel?tourThemeLabel+' \u00b7 ':'')+'Stop '+(i+1)+' of '+tourStops.length;
   document.getElementById('tourTitle').textContent=s.name;
