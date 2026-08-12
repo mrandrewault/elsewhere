@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere Build 26 : auto-routed tours (nearest-first loop from downtown), homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 27 : tour ends back at the town's drop-in view, optional "Seen on" dive-in link per stop (pauses auto-advance), auto-routed tours (nearest-first loop from downtown), homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -104,6 +104,8 @@
   #tour .tour-prog{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terra);margin-bottom:4px}
   #tour .tour-title{font-family:var(--serif);font-size:21px;color:var(--ink);margin-bottom:6px}
   #tour .tour-blurb{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--ink);margin-bottom:12px}
+  #tour .tour-seen{margin-bottom:10px}
+  #tour .tour-seen:empty{display:none}
   #tour .tour-row{display:flex;gap:10px;justify-content:flex-end}
   #tour button{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:20px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
   #tour button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
@@ -215,6 +217,7 @@
   <div class="tour-prog" id="tourProg"></div>
   <div class="tour-title" id="tourTitle"></div>
   <div class="tour-blurb" id="tourBlurb"></div>
+  <div class="tour-seen" id="tourSeen"></div>
   <div class="tour-row"><button id="tourEnd">End tour</button><button id="tourNext" class="prim">Next &rarr;</button></div>
 </div>
 <div id="tourMenu">
@@ -751,10 +754,33 @@ function flyToTourStop(i){
   document.getElementById('tourProg').textContent=(tourThemeLabel?tourThemeLabel+' \u00b7 ':'')+'Stop '+(i+1)+' of '+tourStops.length;
   document.getElementById('tourTitle').textContent=s.name;
   document.getElementById('tourBlurb').textContent=s.blurb||'';
+  // Optional "Seen on" dive-in link. Tapping it pauses the auto-advance so the tour waits while you watch.
+  const seenBox=document.getElementById('tourSeen'); seenBox.innerHTML='';
+  const cr=creatorForStop(s);
+  if(cr){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent=cr.btn||('Seen on @'+cr.handle); b.onclick=()=>{ clearTimeout(tourTimer); openCreator(cr,s.name); }; seenBox.appendChild(b); }
   document.getElementById('tourNext').textContent=(i+1>=tourStops.length)?'Finish':'Next \u2192';
   tourTimer=setTimeout(()=>flyToTourStop(i+1),TOUR_DWELL_MS);
 }
-function endTour(){ clearTimeout(tourTimer); tourStops=null; document.getElementById('tour').classList.remove('show'); showInfobar(true); enterMode('fly'); }
+function endTour(){
+  clearTimeout(tourTimer); tourStops=null;
+  document.getElementById('tour').classList.remove('show'); showInfobar(true);
+  // Return to the same overview Elsewhere first drops you into, so you get your bearings back.
+  if(viewer&&tilesetLoaded&&currentTown){
+    viewer.scene.screenSpaceCameraController.enableInputs=true;
+    viewer.camera.flyTo({ destination:Cesium.Cartesian3.fromDegrees(currentTown.lon,currentTown.lat,currentTown.elev+800), orientation:{heading:toRad(25),pitch:toRad(-32),roll:0}, duration:3.0,
+      complete:()=>{ enterMode('fly'); setStatus("Tour complete. You’re back over "+currentTown.name+". Fly around, or use the tabs below to dig in."); setTimeout(()=>setStatus(""),5200); } });
+  } else { enterMode('fly'); }
+}
+// Which "Seen on" video (if any) to offer on a tour stop. Food spots reuse your existing
+// creator system; any spot can carry its own s.seen:{url,platform,handle,btn}. Others stay clean.
+function creatorForStop(s){
+  if(s.seen&&s.seen.url) return s.seen;
+  if(isFoodish({cat:s.cat,name:s.name})){
+    const cr=matchCreator(s.name)||(currentTown&&CREATOR_TOWNS[currentTown.name])||GLOBAL_CREATOR;
+    if(cr&&cr.url) return cr;
+  }
+  return null;
+}
 document.getElementById('tourNext').onclick=()=>flyToTourStop(tourIdx+1);
 document.getElementById('tourEnd').onclick=()=>endTour();
 document.getElementById('tmClose').onclick=()=>{ document.getElementById('tourMenu').classList.remove('show'); showInfobar(true); };
