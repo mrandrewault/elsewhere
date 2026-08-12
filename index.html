@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere Build 25 : homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 26 : auto-routed tours (nearest-first loop from downtown), homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -664,11 +664,50 @@ function buildTourMenu(){
     box.appendChild(b);
   });
 }
+// Find one lon/lat for a stop so we can route it. Caches the result on the spot
+// (s._rlon/_rlat) so we only ask Google once per spot per session.
+function resolveStopLatLon(s){
+  return new Promise(resolve=>{
+    if(s._rlon!=null){ resolve({lon:s._rlon,lat:s._rlat}); return; }
+    if(s.view&&s.view.lon!=null){ resolve({lon:s.view.lon,lat:s.view.lat}); return; }
+    if(s.lat!=null&&s.lon!=null){ resolve({lon:s.lon,lat:s.lat}); return; }
+    if(placesSvc&&window.google&&google.maps){
+      try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
+        if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) resolve({lon:res[0].geometry.location.lng(),lat:res[0].geometry.location.lat()});
+        else resolve(null);
+      }); }catch(e){ resolve(null); }
+    } else resolve(null);
+  });
+}
+// Order stops as one clean loop: start at the downtown core, then keep hopping to the
+// nearest stop not yet visited. Stops we cannot place go to the end in their listed order.
+function orderStopsByRoute(stops){
+  return Promise.all(stops.map(s=>resolveStopLatLon(s).then(c=>{ if(c){ s._rlon=c.lon; s._rlat=c.lat; } return s; }))).then(list=>{
+    const pool=list.filter(s=>s._rlon!=null);
+    const without=list.filter(s=>s._rlon==null);
+    const ordered=[]; let curLat=(currentTown?currentTown.lat:0), curLon=(currentTown?currentTown.lon:0);
+    while(pool.length){
+      let bi=0, bd=Infinity;
+      for(let i=0;i<pool.length;i++){
+        const dx=(pool[i]._rlon-curLon)*Math.cos(curLat*Math.PI/180);
+        const dy=pool[i]._rlat-curLat; const d=dx*dx+dy*dy;
+        if(d<bd){ bd=d; bi=i; }
+      }
+      const nx=pool.splice(bi,1)[0]; ordered.push(nx); curLat=nx._rlat; curLon=nx._rlon;
+    }
+    return ordered.concat(without);
+  });
+}
 function runTour(theme){
   const stops=stopsForTheme(currentTown.name,theme);
   if(!stops.length){ setStatus("No stops in that tour yet. Add some or auto-fill from Google."); setTimeout(()=>setStatus(""),3000); return; }
   document.getElementById('tourMenu').classList.remove('show');
-  tourStops=stops; tourThemeLabel=theme.label; tourIdx=0; flyToTourStop(0);
+  tourThemeLabel=theme.label;
+  setStatus("Planning the route…");
+  orderStopsByRoute(stops).then(ordered=>{
+    setStatus("");
+    tourStops=ordered; tourIdx=0; flyToTourStop(0);
+  });
 }
 function flyToTourStop(i){
   if(!tourStops) return;
@@ -700,6 +739,9 @@ function flyToTourStop(i){
   if(s.view&&s.view.lon!=null){
     // an exact saved camera replays precisely (captured with the G key)
     viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(s.view.lon,s.view.lat,s.view.height),orientation:{heading:toRad(s.view.heading),pitch:toRad(s.view.pitch),roll:0},duration:3.0});
+  } else if(s._rlon!=null){
+    // routing already resolved this spot's location, so reuse it (no second Google lookup)
+    aimAt(s._rlon,s._rlat);
   } else if(placesSvc&&window.google&&google.maps){ try{ placesSvc.findPlaceFromQuery({query:s.q||(s.name+', '+currentTown.name+', '+currentTown.state),fields:['geometry']},(res,st)=>{
     if(st===google.maps.places.PlacesServiceStatus.OK&&res&&res[0]&&res[0].geometry&&res[0].geometry.location) aimAt(res[0].geometry.location.lng(),res[0].geometry.location.lat());
     else aimAt(s.lon||currentTown.lon,s.lat||currentTown.lat);
