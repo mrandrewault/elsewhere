@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Elsewhere Build 27 : tour ends back at the town's drop-in view, optional "Seen on" dive-in link per stop (pauses auto-advance), auto-routed tours (nearest-first loop from downtown), homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
+<!-- Elsewhere Build 28 : tour Back button, Glass House pinned to real coordinates, tour ends back at the town's drop-in view, optional "Seen on" dive-in link per stop (pauses auto-advance), auto-routed tours (nearest-first loop from downtown), homes for-sale/for-rent flythrough (demo listings), face-the-front tours, five themed tours, manual add-a-spot, Google auto-fill -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -106,7 +106,8 @@
   #tour .tour-blurb{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--ink);margin-bottom:12px}
   #tour .tour-seen{margin-bottom:10px}
   #tour .tour-seen:empty{display:none}
-  #tour .tour-row{display:flex;gap:10px;justify-content:flex-end}
+  #tour .tour-row{display:flex;gap:10px;justify-content:space-between;align-items:center}
+  #tour .tour-nav{display:flex;gap:10px}
   #tour button{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:20px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
   #tour button.prim{background:var(--teal);color:#fff;border-color:var(--teal)}
   #tourMenu{position:absolute;left:50%;transform:translateX(-50%);bottom:88px;z-index:27;width:min(440px,92vw);display:none;background:rgba(244,238,223,.98);backdrop-filter:blur(8px);border-radius:16px;padding:16px 18px;box-shadow:0 16px 46px rgba(0,0,0,.34)}
@@ -218,7 +219,7 @@
   <div class="tour-title" id="tourTitle"></div>
   <div class="tour-blurb" id="tourBlurb"></div>
   <div class="tour-seen" id="tourSeen"></div>
-  <div class="tour-row"><button id="tourEnd">End tour</button><button id="tourNext" class="prim">Next &rarr;</button></div>
+  <div class="tour-row"><button id="tourEnd">End tour</button><span class="tour-nav"><button id="tourBack">&larr; Back</button><button id="tourNext" class="prim">Next &rarr;</button></span></div>
 </div>
 <div id="tourMenu">
   <div class="tm-h" id="tmTitle">Take a tour</div>
@@ -393,7 +394,7 @@ const TOUR_SPOTS={
  {q:"New Canaan Music, New Canaan CT", name:"New Canaan Music", cat:"music", blurb:"The town's music shop, instruments and lessons for local families."},
  {q:"Elm Street Books, New Canaan CT", name:"Elm Street Books", cat:"bookstore", top10:true, blurb:"The independent bookstore in the heart of the village."},
  {q:"New Canaan Museum & Historical Society, New Canaan CT", name:"New Canaan Museum & Historical Society", cat:"museum", top10:true, blurb:"The town's history under one roof, on a historic campus near God's Acre."},
- {q:"The Glass House, New Canaan CT", name:"The Glass House", cat:"museum", blurb:"Philip Johnson's landmark modernist house and grounds, the icon of the town's architecture story."},
+ {q:"The Glass House, New Canaan CT", lat:41.14472, lon:-73.50806, name:"The Glass House", cat:"museum", blurb:"Philip Johnson's landmark modernist house and grounds, the icon of the town's architecture story."},
  {q:"New Canaan Country Club, New Canaan CT", name:"New Canaan Country Club", cat:"outdoor", blurb:"The private club with golf and tennis, a fixture of local life."},
  {q:"New Canaan YMCA, New Canaan CT", name:"New Canaan YMCA", cat:"gym", top10:true, blurb:"The community gym and pool, where the town works out and kids learn to swim."},
  {q:"Sama Yoga, New Canaan CT", name:"Sama Yoga", cat:"yoga", blurb:"A local yoga studio for classes and drop-ins."},
@@ -758,6 +759,7 @@ function flyToTourStop(i){
   const seenBox=document.getElementById('tourSeen'); seenBox.innerHTML='';
   const cr=creatorForStop(s);
   if(cr){ const b=document.createElement('button'); b.className='seenbtn'; b.textContent=cr.btn||('Seen on @'+cr.handle); b.onclick=()=>{ clearTimeout(tourTimer); openCreator(cr,s.name); }; seenBox.appendChild(b); }
+  document.getElementById('tourBack').style.display=(i>0)?'':'none';
   document.getElementById('tourNext').textContent=(i+1>=tourStops.length)?'Finish':'Next \u2192';
   tourTimer=setTimeout(()=>flyToTourStop(i+1),TOUR_DWELL_MS);
 }
@@ -782,6 +784,7 @@ function creatorForStop(s){
   return null;
 }
 document.getElementById('tourNext').onclick=()=>flyToTourStop(tourIdx+1);
+document.getElementById('tourBack').onclick=()=>{ if(tourIdx>0) flyToTourStop(tourIdx-1); };
 document.getElementById('tourEnd').onclick=()=>endTour();
 document.getElementById('tmClose').onclick=()=>{ document.getElementById('tourMenu').classList.remove('show'); showInfobar(true); };
 
